@@ -4,12 +4,21 @@
 
 | # | File name | Description | Author | Created | Status | Applied date |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | `20261122100000_extensions_enums_and_helpers.sql` | Enable pgcrypto, create shared enums, and add the updated-at trigger function. | TBD | 2026-11-22 | Pending | |
-| 2 | `20261122100100_staff_and_tables.sql` | Create staff profiles and dining tables. | TBD | 2026-11-22 | Pending | |
-| 3 | `20261122100200_menu.sql` | Create menu categories and menu items. | TBD | 2026-11-22 | Pending | |
-| 4 | `20261122100300_orders.sql` | Create order counters, orders, order items, and order status history. | TBD | 2026-11-22 | Pending | |
-| 5 | `20261122100400_payments.sql` | Create payment records for counter and future online payments. | TBD | 2026-11-22 | Pending | |
-| 6 | `20261122100500_indexes_triggers_and_rls.sql` | Add operational and analytics indexes, updated-at triggers, and RLS. | TBD | 2026-11-22 | Pending | |
+| 1 | `20261122100000_extensions_enums_and_helpers.sql` | Enable pgcrypto, create shared enums, and add the updated-at trigger function. | TBD | 2026-11-22 | Applied | 2026-11-22 |
+| 2 | `20261122100100_staff_and_tables.sql` | Create staff profiles and dining tables. | TBD | 2026-11-22 | Applied | 2026-11-22 |
+| 3 | `20261122100200_menu.sql` | Create menu categories and menu items. | TBD | 2026-11-22 | Applied | 2026-11-22 |
+| 4 | `20261122100300_orders.sql` | Create order counters, orders, order items, and order status history. | TBD | 2026-11-22 | Applied | 2026-11-22 |
+| 5 | `20261122100400_payments.sql` | Create payment records for counter and future online payments. | TBD | 2026-11-22 | Applied | 2026-11-22 |
+| 6 | `20261122100500_indexes_triggers_and_rls.sql` | Add operational and analytics indexes, updated-at triggers, and RLS. | TBD | 2026-11-22 | Applied | 2026-11-22 |
+| 7 | `20261122100600_create_order_function.sql` | Add the atomic customer order creation RPC function. | TBD | 2026-11-22 | Applied | 2026-11-22 |
+
+## Seed Data
+
+| File name | Purpose | Date applied | Environment | Safe to re-run |
+| --- | --- | --- | --- | --- |
+| `001_dev_menu_and_tables.sql` | Seed 4 menu categories, 13 menu items, and 10 dining tables. | 2026-11-22 | DEV ONLY | Yes |
+
+Seed data must never be run against production data.
 
 ## ERD
 
@@ -252,6 +261,36 @@ erDiagram
 | `provider` | `text` | Future online provider name. |
 | `provider_reference` | `text` | Future provider transaction identifier. |
 | `created_at` | `timestamptz` | Payment record creation time. |
+
+## RPC Functions
+
+### `public.create_order`
+
+The `create_order(p_table_code, p_idempotency_key, p_customer_notes, p_items, p_expiry_minutes)` RPC atomically creates or repeats a customer order.
+
+| Parameter | Type | Purpose |
+| --- | --- | --- |
+| `p_table_code` | `text` | QR code of the active dining table. |
+| `p_idempotency_key` | `text` | Unique submission key preventing duplicate orders. |
+| `p_customer_notes` | `text` | Optional notes for the whole order. |
+| `p_items` | `jsonb` | Menu item IDs, quantities, and item notes. |
+| `p_expiry_minutes` | `integer` | Minutes before an unpaid order expires. |
+
+The function validates the table and every menu item, merges repeated items, snapshots prices and costs, creates the order and status history, and returns a JSON order object.
+
+Its return object can be:
+
+- A new order: `isNew = true`, the order reference and statuses, subtotal and total, expiration, table, items, and status timestamps.
+- An existing idempotent order: `isNew = false`, with the same stored order details.
+- An error object: `errorCode` and `message`, plus `itemName` or `menuItemId` when applicable.
+
+Error codes:
+
+- `INVALID_REQUEST`: Missing idempotency key or invalid item structure or quantity.
+- `TABLE_INVALID`: The table code is unknown or inactive.
+- `ITEM_MISSING`: The requested menu item does not exist.
+- `ITEM_INACTIVE`: The menu item is inactive.
+- `ITEM_SOLD_OUT`: The menu item is sold out.
 
 ## Enums
 
