@@ -1,0 +1,91 @@
+@baseUrl = http://localhost:5000/api
+@menuItemId = 00000000-0000-4000-8000-000000000001
+@soldOutItemId = 00000000-0000-4000-8000-000000000002
+
+### Get customer menu
+GET {{baseUrl}}/customer/menu
+
+### Get active table
+GET {{baseUrl}}/customer/tables/T01
+
+### Create order
+POST {{baseUrl}}/orders
+Content-Type: application/json
+
+{
+  "tableCode": "T01",
+  "idempotencyKey": "dev-order-001",
+  "customerNotes": "No onions",
+  "items": [
+    {
+      "menuItemId": "{{menuItemId}}",
+      "quantity": 2,
+      "notes": "Extra rice"
+    }
+  ]
+}
+
+### Repeat the same idempotency key
+POST {{baseUrl}}/orders
+Content-Type: application/json
+
+{
+  "tableCode": "T01",
+  "idempotencyKey": "dev-order-001",
+  "customerNotes": "No onions",
+  "items": [
+    {
+      "menuItemId": "{{menuItemId}}",
+      "quantity": 2,
+      "notes": "Extra rice"
+    }
+  ]
+}
+
+### Sold-out item
+POST {{baseUrl}}/orders
+Content-Type: application/json
+
+{
+  "tableCode": "T01",
+  "idempotencyKey": "dev-sold-out-001",
+  "items": [
+    {
+      "menuItemId": "{{soldOutItemId}}",
+      "quantity": 1
+    }
+  ]
+}
+
+### Invalid quantity
+POST {{baseUrl}}/orders
+Content-Type: application/json
+
+{
+  "tableCode": "T01",
+  "idempotencyKey": "dev-invalid-quantity",
+  "items": [
+    {
+      "menuItemId": "{{menuItemId}}",
+      "quantity": 21
+    }
+  ]
+}
+
+### Unknown table
+POST {{baseUrl}}/orders
+Content-Type: application/json
+
+{
+  "tableCode": "UNKNOWN",
+  "idempotencyKey": "dev-unknown-table",
+  "items": [
+    {
+      "menuItemId": "{{menuItemId}}",
+      "quantity": 1
+    }
+  ]
+}
+
+### Get order by reference
+GET {{baseUrl}}/orders/ORD-20261122-0001
