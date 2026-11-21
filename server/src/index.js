@@ -1,6 +1,11 @@
 import "dotenv/config";
 import cors from "cors";
 import express from "express";
+import ordersRoutes from "./modules/orders/orders.routes.js";
+import {
+  errorHandler,
+  notFoundHandler,
+} from "./middleware/errorHandler.js";
 
 const app = express();
 const port = process.env.PORT || 5000;
@@ -12,6 +17,10 @@ app.use(express.json());
 app.get("/api/health", (_req, res) => {
   res.json({ status: "ok", time: new Date().toISOString() });
 });
+
+app.use("/api", ordersRoutes);
+app.use(notFoundHandler);
+app.use(errorHandler);
 
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`);

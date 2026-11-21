@@ -294,3 +294,11 @@ Order cards in columns (**New**, **Preparing**, **Ready**) showing table number,
 - Keep pre-generated insight cards in case the AI API fails.
 - Deploy over HTTPS so camera scanning works.
 - Test on a real phone and tablet before the presentation.
+
+## Documentation
+
+- [Structure](/docs/STRUCTURE.md)
+- [Team Ownership](/docs/OWNERSHIP.md)
+- [Database](/docs/DATABASE.md)
+- [API](/docs/API.md)
+- [Progress](/docs/PROGRESS.md)

@@ -23,4 +23,8 @@ export const env = {
   SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
   DATABASE_URL: process.env.DATABASE_URL,
   GEMINI_API_KEY: process.env.GEMINI_API_KEY,
+  ORDER_EXPIRY_MINUTES: (() => {
+    const parsed = Number.parseInt(process.env.ORDER_EXPIRY_MINUTES || "20", 10);
+    return Number.isInteger(parsed) && parsed > 0 ? parsed : 20;
+  })(),
 };
