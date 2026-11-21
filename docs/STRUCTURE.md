@@ -9,5 +9,7 @@
 - `server/src/realtime/` contains realtime server setup, `server/src/jobs/` contains scheduled or background jobs, and `server/src/utils/` contains server-only utilities.
 - `supabase/migrations/` contains SQL migrations and `supabase/seed/` contains seed data and demo scenarios.
 - `docs/` contains repository documentation, wireframes, and test cases.
+- `docs/API.md` documents the tested API endpoints and `docs/DATABASE.md` documents the database design and migrations. `docs/PROGRESS.md` tracks implementation progress.
+- `server/requests/` contains VS Code REST Client request files for manual API testing.
 
 Keep changes inside the owning developer's area unless the change is shared or explicitly assigned to another owner. Use pull requests for shared folders.
