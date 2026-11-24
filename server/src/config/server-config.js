@@ -3,7 +3,10 @@ import "dotenv/config";
 const supabaseServerKey =
   process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-const requiredVariables = ["SUPABASE_URL", "SUPABASE_ANON_KEY"];
+// Only SUPABASE_URL is required at the module level; the service-role key is
+// checked separately below. SUPABASE_ANON_KEY is a client-side value and is
+// intentionally not required server-side.
+const requiredVariables = ["SUPABASE_URL"];
 
 const missingVariables = requiredVariables.filter(
   (name) => !process.env[name] || process.env[name].trim() === ""
