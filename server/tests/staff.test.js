@@ -10,6 +10,7 @@ async function runTests() {
   let cashierToken = "";
   let adminStaffId = "";
   let createdStaffId = null;
+  const temporarilyDeactivatedAdminIds = [];
 
   try {
     // 1. Sign in as Admin
@@ -175,7 +176,7 @@ async function runTests() {
     assert.equal(pinRes.status, 200, "PIN switch failed for provisioned staff.");
     console.log("✓ Provisioned staff login and PIN switch succeeded.");
 
-    // 9. Test Updating Staff Role, Name, and PIN
+    // 9. Test Updating Staff Role, Name, PIN, and Clearing PIN
     const updatedPin = "9134";
     console.log("\n9. Updating provisioned staff to kitchen with new PIN...");
     const updateRes = await fetch(`${API_URL}/staff/${createdStaffId}`, {
@@ -199,9 +200,21 @@ async function runTests() {
     assert.equal(updated.fullName, "Chef Test Staff");
     assert.equal(updated.role, "kitchen");
     assert.equal(updated.hasPin, true);
-    console.log("✓ Staff details updated successfully.");
 
-    // 10. Test Deactivating Staff & Verifying Login Blocked
+    const clearPinRes = await fetch(`${API_URL}/staff/${createdStaffId}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${adminToken}`,
+      },
+      body: JSON.stringify({ pinCode: null }),
+    });
+    const clearedPin = await clearPinRes.json();
+    assert.equal(clearPinRes.status, 200);
+    assert.equal(clearedPin.hasPin, false);
+    console.log("✓ Staff details updated and PIN cleared successfully.");
+
+    // 10. Test Deactivating & Reactivating Staff + Blocking Login When Inactive
     console.log("\n10. Deactivating provisioned staff (isActive: false)...");
     const deactRes = await fetch(`${API_URL}/staff/${createdStaffId}/status`, {
       method: "PATCH",
@@ -226,85 +239,114 @@ async function runTests() {
     const blockedLoginBody = await blockedLoginRes.json();
     assert.equal(blockedLoginRes.status, 403);
     assert.equal(blockedLoginBody?.error?.code, "STAFF_ACCOUNT_INACTIVE");
-    console.log("✓ Deactivated staff blocked from login with 403 STAFF_ACCOUNT_INACTIVE.");
+
+    const reactRes = await fetch(`${API_URL}/staff/${createdStaffId}/status`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${adminToken}`,
+      },
+      body: JSON.stringify({ isActive: true }),
+    });
+    const reactBody = await reactRes.json();
+    assert.equal(reactRes.status, 200);
+    assert.equal(reactBody.isActive, true);
+    console.log("✓ Deactivated staff blocked from login and reactivation succeeded.");
 
     // 11. Test Last Active Admin Protection
     console.log("\n11. Testing Last Active Admin Protection...");
     const activeAdmins = listBody.staff.filter(
       (s) => s.role === "admin" && s.isActive
     );
+    const otherActiveAdmins = activeAdmins.filter((s) => s.id !== adminStaffId);
 
-    if (activeAdmins.length === 1) {
-      // Attempt to deactivate sole active admin
-      const lastDeactRes = await fetch(`${API_URL}/staff/${adminStaffId}/status`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${adminToken}`,
-        },
-        body: JSON.stringify({ isActive: false }),
-      });
-      const lastDeactBody = await lastDeactRes.json();
-      assert.equal(lastDeactRes.status, 400);
-      assert.equal(
-        lastDeactBody?.error?.code,
-        "LAST_ADMIN_CANNOT_BE_DEACTIVATED"
+    for (const otherAdmin of otherActiveAdmins) {
+      const tempDeactRes = await fetch(
+        `${API_URL}/staff/${otherAdmin.id}/status`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${adminToken}`,
+          },
+          body: JSON.stringify({ isActive: false }),
+        }
       );
-      console.log(
-        "✓ Sole admin deactivation blocked with 400 LAST_ADMIN_CANNOT_BE_DEACTIVATED."
-      );
-
-      // Attempt to demote sole active admin
-      const lastDemoteRes = await fetch(`${API_URL}/staff/${adminStaffId}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${adminToken}`,
-        },
-        body: JSON.stringify({ role: "cashier" }),
-      });
-      const lastDemoteBody = await lastDemoteRes.json();
-      assert.equal(lastDemoteRes.status, 400);
-      assert.equal(lastDemoteBody?.error?.code, "CANNOT_DEMOTE_LAST_ADMIN");
-      console.log(
-        "✓ Sole admin demotion blocked with 400 CANNOT_DEMOTE_LAST_ADMIN."
-      );
-
-      // Promote & reactivate test staff to admin (now 2 active admins)
-      console.log("Promoting test staff to active admin (2 active admins)...");
-      const promoteRes = await fetch(`${API_URL}/staff/${createdStaffId}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${adminToken}`,
-        },
-        body: JSON.stringify({ role: "admin", isActive: true }),
-      });
-      assert.equal(promoteRes.status, 200);
-
-      // Now demoting test staff back to cashier succeeds (1 active admin left)
-      const demoteSecondRes = await fetch(`${API_URL}/staff/${createdStaffId}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${adminToken}`,
-        },
-        body: JSON.stringify({ role: "cashier" }),
-      });
-      assert.equal(demoteSecondRes.status, 200);
-      console.log(
-        "✓ Second admin demotion allowed while primary admin remains active."
-      );
-    } else {
-      console.log(
-        `ℹ Skipping sole-admin failure check (${activeAdmins.length} active admins already exist in DB).`
-      );
+      assert.equal(tempDeactRes.status, 200);
+      temporarilyDeactivatedAdminIds.push(otherAdmin.id);
     }
+
+    // Attempt to deactivate sole active admin
+    const lastDeactRes = await fetch(`${API_URL}/staff/${adminStaffId}/status`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${adminToken}`,
+      },
+      body: JSON.stringify({ isActive: false }),
+    });
+    const lastDeactBody = await lastDeactRes.json();
+    assert.equal(lastDeactRes.status, 400);
+    assert.equal(
+      lastDeactBody?.error?.code,
+      "LAST_ADMIN_CANNOT_BE_DEACTIVATED"
+    );
+    console.log(
+      "✓ Sole admin deactivation blocked with 400 LAST_ADMIN_CANNOT_BE_DEACTIVATED."
+    );
+
+    // Attempt to demote sole active admin
+    const lastDemoteRes = await fetch(`${API_URL}/staff/${adminStaffId}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${adminToken}`,
+      },
+      body: JSON.stringify({ role: "cashier" }),
+    });
+    const lastDemoteBody = await lastDemoteRes.json();
+    assert.equal(lastDemoteRes.status, 400);
+    assert.equal(lastDemoteBody?.error?.code, "CANNOT_DEMOTE_LAST_ADMIN");
+    console.log(
+      "✓ Sole admin demotion blocked with 400 CANNOT_DEMOTE_LAST_ADMIN."
+    );
+
+    // Promote test staff to active admin (now 2 active admins)
+    console.log("Promoting test staff to active admin (2 active admins)...");
+    const promoteRes = await fetch(`${API_URL}/staff/${createdStaffId}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${adminToken}`,
+      },
+      body: JSON.stringify({ role: "admin", isActive: true }),
+    });
+    assert.equal(promoteRes.status, 200);
+
+    // Now demoting test staff back to cashier succeeds (1 active admin left)
+    const demoteSecondRes = await fetch(`${API_URL}/staff/${createdStaffId}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${adminToken}`,
+      },
+      body: JSON.stringify({ role: "cashier" }),
+    });
+    assert.equal(demoteSecondRes.status, 200);
+    console.log(
+      "✓ Second admin demotion allowed while primary admin remains active."
+    );
 
     console.log("\n==========================================");
     console.log("🎉 ALL STAFF MANAGEMENT API TESTS PASSED! 🎉");
     console.log("==========================================\n");
   } finally {
+    for (const adminId of temporarilyDeactivatedAdminIds) {
+      await supabase
+        .from("staff_profiles")
+        .update({ is_active: true })
+        .eq("id", adminId);
+    }
     if (createdStaffId) {
       await supabase.from("staff_profiles").delete().eq("id", createdStaffId);
       await supabase.auth.admin.deleteUser(createdStaffId).catch(() => {});
