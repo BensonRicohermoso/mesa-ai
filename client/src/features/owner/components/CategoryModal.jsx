@@ -18,6 +18,15 @@ export function CategoryModal({ isOpen, onClose, onSave, category }) {
     }
   }, [isOpen, category])
 
+  useEffect(() => {
+    if (!isOpen) return undefined
+    function handleKeyDown(e) {
+      if (e.key === 'Escape' && !saving) onClose()
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isOpen, saving, onClose])
+
   if (!isOpen) return null
 
   async function handleSubmit(e) {
@@ -41,7 +50,7 @@ export function CategoryModal({ isOpen, onClose, onSave, category }) {
   }
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay" onClick={() => !saving && onClose()}>
       <div className="modal-dialog" onClick={(e) => e.stopPropagation()}>
         <span className="editorial-eyebrow">Category Configuration</span>
         <h2 className="modal-title">{isEditing ? 'Edit Category' : 'New Category'}</h2>

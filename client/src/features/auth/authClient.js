@@ -133,7 +133,7 @@ async function ensureValidToken(options) {
   }
 }
 
-async function request(path, options = {}) {
+export async function request(path, options = {}) {
   const finalOptions = await ensureValidToken(options)
   const response = await fetch(`${API_URL}/api${path}`, finalOptions)
   const payload = await response.json().catch(() => null)
