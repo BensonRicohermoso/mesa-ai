@@ -109,6 +109,7 @@ export function AnalyticsReports({ filter, subView, onSubViewChange }) {
 
   useEffect(() => {
     const ac = new AbortController()
+    // oxlint-disable-next-line react/set-state-in-effect -- async fetch is the standard pattern
     fetchData(ac.signal)
     return () => ac.abort()
   }, [fetchData])

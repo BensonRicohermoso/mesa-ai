@@ -33,9 +33,10 @@ export function OwnerDashboard({ filter, onNavigateReports }) {
   const [recentOrders, setRecentOrders] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  const [granularity, setGranularity] = useState(() =>
-    filter.from === filter.to ? 'hour' : 'day'
-  )
+  const [granularityOverride, setGranularityOverride] = useState(null)
+
+  // Derive default granularity from date range; allow manual override
+  const granularity = granularityOverride ?? (filter.from === filter.to ? 'hour' : 'day')
 
   const fetchData = useCallback(async (signal) => {
     setLoading(true)
@@ -87,14 +88,10 @@ export function OwnerDashboard({ filter, onNavigateReports }) {
 
   useEffect(() => {
     const ac = new AbortController()
+    // oxlint-disable-next-line react/set-state-in-effect -- async fetch is the standard pattern
     fetchData(ac.signal)
     return () => ac.abort()
   }, [fetchData])
-
-  // Auto-set granularity when date range changes
-  useEffect(() => {
-    setGranularity(filter.from === filter.to ? 'hour' : 'day')
-  }, [filter.from, filter.to])
 
   const kpis = summary?.kpis
   const deltas = summary?.deltasPct
@@ -191,14 +188,14 @@ export function OwnerDashboard({ filter, onNavigateReports }) {
               <button
                 type="button"
                 className={`segment-btn ${granularity === 'day' ? 'segment-btn--active' : ''}`}
-                onClick={() => setGranularity('day')}
+                onClick={() => setGranularityOverride('day')}
               >
                 Day
               </button>
               <button
                 type="button"
                 className={`segment-btn ${granularity === 'hour' ? 'segment-btn--active' : ''}`}
-                onClick={() => setGranularity('hour')}
+                onClick={() => setGranularityOverride('hour')}
               >
                 Hour
               </button>
