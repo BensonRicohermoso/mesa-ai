@@ -9,3 +9,4 @@ logs
 .DS_Store
 .vscode/*
 !.vscode/settings.json
+TEMP_MANAGEMENT_MODULES_PLAN.md
