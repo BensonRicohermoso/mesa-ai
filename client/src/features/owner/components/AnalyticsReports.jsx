@@ -29,7 +29,7 @@ const QUADRANT_LABELS = {
   all: 'All',
   star: '★ Stars',
   plowhorse: '◆ Plowhorses',
-  puzzle: '? Puzzles',
+  puzzle: '◇ Puzzles',
   dog: '○ Dogs',
 }
 
@@ -58,6 +58,12 @@ export function AnalyticsReports({ filter, subView, onSubViewChange }) {
   const [ordersPage, setOrdersPage] = useState(0)
   const ordersPerPage = 15
 
+  // Reset pagination when filter changes
+  const filterKey = `${filter.from}|${filter.to}|${filter.categoryId}|${filter.paymentMethod}`
+  useEffect(() => {
+    setOrdersPage(0)
+  }, [filterKey])
+
   const fetchData = useCallback(async (signal) => {
     setLoading(true)
     setError(null)
@@ -83,7 +89,7 @@ export function AnalyticsReports({ filter, subView, onSubViewChange }) {
         return
       }
 
-      const [summary, trends, menuEngineering, performance, recentOrders] = await Promise.all([
+      const results = await Promise.all([
         getAnalyticsSummary({ ...params, compare: filter.compare ? 'true' : undefined }, { signal }),
         getAnalyticsTrends(params, { signal }),
         getMenuEngineering({ ...params, includeArchived: includeArchived ? 'true' : undefined }, { signal }),
@@ -91,9 +97,17 @@ export function AnalyticsReports({ filter, subView, onSubViewChange }) {
         getRecentAnalyticsOrders({ ...params, limit: 50 }, { signal }),
       ])
 
-      setData({ summary, trends, menuEngineering, performance, recentOrders })
+      if (signal.aborted) return
+
+      setData({
+        summary: results[0],
+        trends: results[1],
+        menuEngineering: results[2],
+        performance: results[3],
+        recentOrders: results[4],
+      })
     } catch (err) {
-      if (err.name === 'AbortError') return
+      if (err.name === 'AbortError' || signal.aborted) return
       const status = err.status || err.statusCode
       if (status === 401 || status === 403) {
         setError({ type: 'auth', message: 'Authentication required. Please sign in again.' })
@@ -103,7 +117,9 @@ export function AnalyticsReports({ filter, subView, onSubViewChange }) {
         setError({ type: 'server', message: err.message || 'Failed to load analytics data.' })
       }
     } finally {
-      setLoading(false)
+      if (!signal.aborted) {
+        setLoading(false)
+      }
     }
   }, [filter, includeArchived])
 

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import PropTypes from 'prop-types'
 import { getCategories } from '../../../shared/api/menuApi.js'
 import { getPresetDateRange, isValidDateRange } from '../utils/analyticsFormatters.js'
@@ -25,16 +25,24 @@ export function AnalyticsToolbar({
   isLoading,
 }) {
   const [categories, setCategories] = useState([])
+  const fetchedCategories = useRef(false)
 
   useEffect(() => {
+    // Fetch categories only once per mount, not on every filter change
+    if (fetchedCategories.current) return
+    fetchedCategories.current = true
     let cancelled = false
     getCategories()
       .then((res) => {
-        if (!cancelled && Array.isArray(res)) {
-          setCategories(res)
+        if (!cancelled) {
+          // getCategories returns { categories: [...] } or possibly a plain array
+          const list = Array.isArray(res) ? res : (res?.categories || [])
+          setCategories(list)
         }
       })
-      .catch(() => {})
+      .catch(() => {
+        fetchedCategories.current = false // allow retry on next mount
+      })
     return () => { cancelled = true }
   }, [])
 
@@ -49,11 +57,12 @@ export function AnalyticsToolbar({
 
   function handleDateChange(field, value) {
     const next = { ...filter, [field]: value, preset: 'custom' }
+    // Always update local state so the input stays in sync, but only
+    // propagate a valid range so child components don't fetch with bad dates.
     if (isValidDateRange(next.from, next.to)) {
       onFilterChange(next)
-    } else {
-      onFilterChange(next)
     }
+    // If invalid (from > to), don't fire — let the user correct the other date
   }
 
   function handleSourceToggle() {

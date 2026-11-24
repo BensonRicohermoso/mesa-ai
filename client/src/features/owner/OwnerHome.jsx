@@ -47,6 +47,11 @@ export function OwnerHome() {
     setRefreshKey((k) => k + 1)
   }, [])
 
+  // Reset granularity override when user changes date preset via toolbar
+  const handleFilterChange = useCallback((next) => {
+    setAnalyticsFilter(next)
+  }, [])
+
   const showToolbar = activeTab === 'overview' || activeTab === 'reports'
 
   return (
@@ -107,7 +112,7 @@ export function OwnerHome() {
           {showToolbar && (
             <AnalyticsToolbar
               filter={analyticsFilter}
-              onFilterChange={setAnalyticsFilter}
+              onFilterChange={handleFilterChange}
               onRefresh={handleRefresh}
               isLoading={false}
             />

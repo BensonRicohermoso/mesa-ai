@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import PropTypes from 'prop-types'
 import { PasswordInput } from '../../../shared/components/PasswordInput.jsx'
 
@@ -6,6 +6,14 @@ export function StationSettingsModal({ isOpen, onClose, session, logout, updateP
   const [newPin, setNewPin] = useState('')
   const [pinFeedback, setPinFeedback] = useState('')
   const [isUpdatingPin, setIsUpdatingPin] = useState(false)
+
+  // Reset form state when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setNewPin('')
+      setPinFeedback('')
+    }
+  }, [isOpen])
 
   if (!isOpen) return null
 

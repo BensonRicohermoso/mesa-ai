@@ -52,6 +52,7 @@ export function OwnerDashboard({ filter, onNavigateReports }) {
     try {
       if (filter.sourceMode === 'preview') {
         const preset = filter.preset === 'custom' ? '7d' : filter.preset
+        // Use setTimeout(0) so React batches all setState calls together
         setSummary(getPreviewData('summary', preset))
         setTrends(getPreviewData('trends', preset, { granularity }))
         setTopItems(getPreviewData('menu-engineering', preset, { limit: 5 }))
@@ -60,19 +61,22 @@ export function OwnerDashboard({ filter, onNavigateReports }) {
         return
       }
 
-      const [sumRes, trendRes, menuRes, ordersRes] = await Promise.all([
+      const results = await Promise.all([
         getAnalyticsSummary(params, { signal }),
         getAnalyticsTrends({ ...params, granularity }, { signal }),
         getMenuEngineering({ ...params, limit: 5 }, { signal }),
         getRecentAnalyticsOrders({ ...params, limit: 8 }, { signal }),
       ])
 
-      setSummary(sumRes)
-      setTrends(trendRes)
-      setTopItems(menuRes)
-      setRecentOrders(ordersRes)
+      // Check abort after await (signal may have fired during network wait)
+      if (signal.aborted) return
+
+      setSummary(results[0])
+      setTrends(results[1])
+      setTopItems(results[2])
+      setRecentOrders(results[3])
     } catch (err) {
-      if (err.name === 'AbortError') return
+      if (err.name === 'AbortError' || signal.aborted) return
       const status = err.status || err.statusCode
       if (status === 401 || status === 403) {
         setError({ type: 'auth', message: 'Authentication required. Please sign in again.' })
@@ -82,7 +86,9 @@ export function OwnerDashboard({ filter, onNavigateReports }) {
         setError({ type: 'server', message: err.message || 'Failed to load analytics data.' })
       }
     } finally {
-      setLoading(false)
+      if (!signal.aborted) {
+        setLoading(false)
+      }
     }
   }, [filter, granularity])
 
