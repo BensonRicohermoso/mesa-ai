@@ -26,7 +26,8 @@ export const env = {
   PORT: process.env.PORT || "5000",
   CLIENT_URL: process.env.CLIENT_URL || "http://localhost:5173",
   SUPABASE_URL: process.env.SUPABASE_URL,
-  SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY,
+  SUPABASE_PUBLISHABLE_KEY:
+    process.env.SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_ANON_KEY || "",
   // Prefer Supabase's current secret key while accepting the legacy service-role key.
   SUPABASE_SERVICE_ROLE_KEY: supabaseServerKey,
   DATABASE_URL: process.env.DATABASE_URL,

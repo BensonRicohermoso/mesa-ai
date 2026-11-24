@@ -1,4 +1,4 @@
-import { supabase } from "../../config/supabase.js";
+import { supabase, supabaseAuth } from "../../config/supabase.js";
 import { createAuthError } from "../../lib/errors.js";
 
 export function formatStaff(profile) {
@@ -41,7 +41,7 @@ export async function getActiveStaffProfile(userId) {
 
 // Authenticate staff with Supabase and return only the session data the client needs.
 export async function loginStaff({ email, password }) {
-  const { data, error } = await supabase.auth.signInWithPassword({
+  const { data, error } = await supabaseAuth.auth.signInWithPassword({
     email,
     password,
   });
@@ -70,7 +70,7 @@ export async function loginStaff({ email, password }) {
 
 // Exchange a refresh token for a new Supabase session.
 export async function refreshStaffSession(refreshToken) {
-  const { data, error } = await supabase.auth.refreshSession({ refresh_token: refreshToken });
+  const { data, error } = await supabaseAuth.auth.refreshSession({ refresh_token: refreshToken });
 
   if (error || !data.user || !data.session) {
     throw createAuthError(401, "REFRESH_FAILED", "Session could not be refreshed. Please sign in again.");
