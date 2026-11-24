@@ -3,7 +3,16 @@
    Follows docs/DESIGN_SYSTEM.md dark palette.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-/* ── Tab Navigation ─────────────────────────────────────────────────────── */
+/* ── Tab Navigation & Shell Width ───────────────────────────────────────── */
+
+.owner-container,
+.owner-card {
+  width: min(100%, 84rem);
+}
+
+.owner-card {
+  padding: clamp(2rem, 4.5vw, 4rem);
+}
 
 .owner-tabs {
   display: flex;
@@ -13,13 +22,26 @@
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.22) transparent;
+}
+
+.owner-tabs::-webkit-scrollbar {
+  height: 4px;
+}
+
+.owner-tabs::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.owner-tabs::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.22);
 }
 
 .owner-tab {
   background: none;
   border: none;
   border-bottom: 2px solid transparent;
-  padding: 0.85rem 1.6rem;
+  padding: 0.85rem 1.35rem;
   font-family: var(--font-sans);
   font-size: 0.7rem;
   font-weight: 600;
@@ -1403,6 +1425,11 @@ select.form-input option {
 .dashboard-empty-state {
   padding: 2rem 0;
   text-align: center;
+}
+
+.dashboard-error-state .owner-subtitle,
+.dashboard-empty-state .owner-subtitle {
+  margin: 0 auto 1.5rem;
 }
 
 .dashboard-error-actions {
