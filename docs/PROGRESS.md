@@ -16,7 +16,7 @@ MESA-AI currently has the repository structure, Supabase setup, seven applied da
 | Kitchen Display | Not started |
 | Order tracking | Not started |
 | Analytics functions | Not started |
-| Auth and management (Dev 2) | In progress |
+| Auth and management (Dev 2) | In progress (Auth & RBAC complete) |
 | Dashboard and AI (Dev 2) | Not started |
 | QA and seed scenarios (Member 3) | In progress |
 | Deployment | Not started |
@@ -40,7 +40,7 @@ MESA-AI currently has the repository structure, Supabase setup, seven applied da
 
 ## Developer 2 Checklist — Management, Dashboard & AI
 
-### Authentication and role permissions — In progress
+### Authentication and role permissions — Done
 
 - [x] Define the Supabase Auth login and session flow.
 - [x] Add `POST /api/auth/login` for staff sign-in and `GET /api/auth/me` for current-user lookup.
@@ -48,7 +48,7 @@ MESA-AI currently has the repository structure, Supabase setup, seven applied da
 - [x] Add reusable role guards for `admin`, `cashier`, and `kitchen`.
 - [x] Build the staff login UI and protected client routes.
 - [x] Apply the role guard to the current staff-only route; future staff modules must add their role policy as they are implemented.
-- [ ] Verify live sign-in and authorization paths with configured Supabase credentials.
+- [x] Verify live sign-in and authorization paths with configured Supabase credentials.
 
 ### Management pages and APIs — Not started
 
@@ -72,7 +72,7 @@ MESA-AI currently has the repository structure, Supabase setup, seven applied da
 
 ### Dev 2 Branch Plan
 
-- [ ] `feature/dev2-auth-rbac`
+- [x] `feature/dev2-auth-rbac`
 - [ ] `feature/dev2-menu-management`
 - [ ] `feature/dev2-table-management`
 - [ ] `feature/dev2-staff-management`
@@ -104,7 +104,11 @@ Customer menu and cart UI at `/t/:tableCode`.
 ### 2026-11-24
 
 - Added the Dev 2 Management, Dashboard, and AI checklist and branch plan.
-- Implemented the server authentication foundation: Supabase login, current-user lookup, active-staff validation, and reusable role guards.
+- Implemented and verified the server authentication foundation: Supabase login, current-user lookup, active-staff validation, token refresh, and reusable role guards.
+- Implemented the 6-Hour Shift POS Lifecycle: hard 6-hour shift expiration, proactive token refresh interceptor, and 10-minute inactivity auto-lock screen.
+- Implemented Quick PIN-based Staff Switching (`/api/auth/pin-switch`) with 4-digit tactile touch numpad UI.
+- Provisioned and verified active staff accounts (`Admin`, `Cashier`, `Kitchen Staff`) in Supabase Auth and `staff_profiles`.
+- Created documentation in `docs/STAFF_CREDENTIALS.md`.
 
 ## How to Update This File
 
