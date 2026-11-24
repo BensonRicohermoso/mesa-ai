@@ -2,7 +2,7 @@ import PropTypes from 'prop-types'
 import { useEffect, useState } from 'react'
 import { getActiveStaffList } from './authClient.js'
 
-export function PinPadModal({ isOpen, onClose, onSwitchSuccess, activeStaffId }) {
+function PinPadModalContent({ onClose, onSwitchSuccess, activeStaffId }) {
   const [pin, setPin] = useState('')
   const [staffList, setStaffList] = useState([])
   const [selectedStaff, setSelectedStaff] = useState(null)
@@ -10,8 +10,6 @@ export function PinPadModal({ isOpen, onClose, onSwitchSuccess, activeStaffId })
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   useEffect(() => {
-    if (!isOpen) return
-
     let isCurrent = true
     getActiveStaffList()
       .then((list) => {
@@ -25,20 +23,18 @@ export function PinPadModal({ isOpen, onClose, onSwitchSuccess, activeStaffId })
     return () => {
       isCurrent = false
     }
-  }, [isOpen, activeStaffId])
+  }, [activeStaffId])
 
   useEffect(() => {
-    if (!isOpen) return undefined
     function handleKeyDown(e) {
       if (e.key === 'Escape' && !isSubmitting) onClose()
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [isOpen, isSubmitting, onClose])
-
-  if (!isOpen) return null
+  }, [isSubmitting, onClose])
 
   function handleDigit(digit) {
+    if (isSubmitting) return
     if (pin.length < 4) {
       const nextPin = pin + digit
       setPin(nextPin)
@@ -51,11 +47,13 @@ export function PinPadModal({ isOpen, onClose, onSwitchSuccess, activeStaffId })
   }
 
   function handleBackspace() {
+    if (isSubmitting) return
     setPin((prev) => prev.slice(0, -1))
     setError('')
   }
 
   function handleClear() {
+    if (isSubmitting) return
     setPin('')
     setError('')
   }
@@ -84,14 +82,25 @@ export function PinPadModal({ isOpen, onClose, onSwitchSuccess, activeStaffId })
   }
 
   return (
-    <div className="pin-overlay" role="dialog" aria-modal="true" aria-labelledby="pin-title">
-      <div className="pin-card">
+    <div
+      className="pin-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="pin-title"
+      onClick={() => !isSubmitting && onClose()}
+    >
+      <div className="pin-card" onClick={(e) => e.stopPropagation()}>
         <header className="pin-header">
           <div>
             <span className="editorial-eyebrow">Quick Shift Switch</span>
             <h2 id="pin-title">Enter Staff PIN</h2>
           </div>
-          <button className="quiet-button pin-close" type="button" onClick={onClose}>
+          <button
+            className="quiet-button pin-close"
+            type="button"
+            onClick={onClose}
+            disabled={isSubmitting}
+          >
             ✕ Cancel
           </button>
         </header>
@@ -99,21 +108,26 @@ export function PinPadModal({ isOpen, onClose, onSwitchSuccess, activeStaffId })
         {/* Staff selector tabs */}
         {staffList.length > 0 && (
           <div className="staff-selector" role="radiogroup" aria-label="Select staff member">
-            {staffList.map((staff) => (
-              <button
-                key={staff.id}
-                type="button"
-                className={`staff-chip ${selectedStaff?.id === staff.id ? 'active' : ''}`}
-                onClick={() => {
-                  setSelectedStaff(staff)
-                  setPin('')
-                  setError('')
-                }}
-              >
-                <strong>{staff.fullName}</strong>
-                <span>{staff.role}</span>
-              </button>
-            ))}
+            {staffList.map((staff) => {
+              const isSelected = selectedStaff?.id === staff.id
+              return (
+                <button
+                  key={staff.id}
+                  type="button"
+                  role="radio"
+                  aria-checked={isSelected}
+                  className={`staff-chip ${isSelected ? 'active' : ''}`}
+                  onClick={() => {
+                    setSelectedStaff(staff)
+                    setPin('')
+                    setError('')
+                  }}
+                >
+                  <strong>{staff.fullName}</strong>
+                  <span>{staff.role}</span>
+                </button>
+              )
+            })}
           </div>
         )}
 
@@ -176,6 +190,23 @@ export function PinPadModal({ isOpen, onClose, onSwitchSuccess, activeStaffId })
         </button>
       </div>
     </div>
+  )
+}
+
+PinPadModalContent.propTypes = {
+  onClose: PropTypes.func.isRequired,
+  onSwitchSuccess: PropTypes.func.isRequired,
+  activeStaffId: PropTypes.string,
+}
+
+export function PinPadModal({ isOpen, onClose, onSwitchSuccess, activeStaffId }) {
+  if (!isOpen) return null
+  return (
+    <PinPadModalContent
+      onClose={onClose}
+      onSwitchSuccess={onSwitchSuccess}
+      activeStaffId={activeStaffId}
+    />
   )
 }
 

@@ -298,6 +298,49 @@ button {
   box-shadow: 0 0 0 1px var(--black);
 }
 
+.password-field {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+}
+
+.password-field input.password-input {
+  width: 100%;
+  padding-right: 2.85rem;
+}
+
+.password-toggle-btn {
+  position: absolute;
+  right: 0.45rem;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  color: var(--muted-gray);
+  transition: color 0.15s ease;
+}
+
+.password-toggle-btn:hover:not(:disabled) {
+  color: var(--black);
+}
+
+.owner-shell .password-toggle-btn:hover:not(:disabled),
+.modal-overlay .password-toggle-btn:hover:not(:disabled) {
+  color: var(--white);
+}
+
+.password-toggle-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
 .checkbox-field {
   display: flex;
   align-items: center;

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import PropTypes from 'prop-types'
+import { PasswordInput } from '../../../shared/components/PasswordInput.jsx'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const ROLE_OPTIONS = [
@@ -184,9 +185,8 @@ function StaffModalForm({ onClose, onSave, staff }) {
               <label className="form-label" htmlFor="staff-password-input">
                 {isEditing ? 'NEW PASSWORD (OPTIONAL)' : 'MASTER PASSWORD'}
               </label>
-              <input
+              <PasswordInput
                 id="staff-password-input"
-                type="password"
                 className="form-input"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -201,11 +201,11 @@ function StaffModalForm({ onClose, onSave, staff }) {
               <label className="form-label" htmlFor="staff-pin-input">
                 4-DIGIT TERMINAL PIN {isEditing ? '(OPTIONAL)' : '(OPTIONAL)'}
               </label>
-              <input
+              <PasswordInput
                 id="staff-pin-input"
-                type="password"
                 inputMode="numeric"
                 className="form-input"
+                toggleLabel="PIN"
                 value={clearPin ? '' : pinCode}
                 onChange={(e) => {
                   setClearPin(false)
