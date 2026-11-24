@@ -582,18 +582,20 @@ button {
 
 .pin-card {
   width: min(100%, 24rem);
-  background: var(--white);
-  border: 1px solid var(--black);
+  background: var(--dark-surface);
+  color: var(--white);
+  border: 1px solid rgba(255, 255, 255, 0.16);
   padding: 2.5rem 2.2rem;
   display: grid;
   gap: 1.6rem;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.85);
 }
 
 .pin-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  border-bottom: 1px solid var(--light-gray);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
   padding-bottom: 1.2rem;
 }
 .pin-header h2 {
@@ -602,7 +604,13 @@ button {
   font-weight: 300;
   letter-spacing: -0.02em;
   margin: 0.2rem 0 0;
-  color: var(--black);
+  color: var(--white);
+}
+.pin-card .quiet-button {
+  color: var(--muted-gray);
+}
+.pin-card .quiet-button:hover {
+  color: var(--white);
 }
 
 /* Staff Selector Tabs */
@@ -616,20 +624,23 @@ button {
   flex: 1;
   min-width: 5.5rem;
   padding: 0.75rem 0.6rem;
-  border: 1px solid var(--light-gray);
-  background: var(--off-white);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: #141414;
   text-align: center;
   cursor: pointer;
   display: grid;
   gap: 0.3rem;
   transition: all 0.2s ease;
 }
+.staff-chip:hover {
+  border-color: rgba(255, 255, 255, 0.35);
+}
 .staff-chip strong {
   font-family: var(--font-sans);
   font-size: 0.75rem;
   font-weight: 600;
   letter-spacing: 0.05em;
-  color: var(--black);
+  color: #cccccc;
 }
 .staff-chip span {
   font-family: var(--font-sans);
@@ -640,12 +651,12 @@ button {
   color: var(--muted-gray);
 }
 .staff-chip.active {
-  border-color: var(--black);
-  background: var(--black);
+  border-color: var(--white);
+  background: var(--white);
 }
 .staff-chip.active strong,
 .staff-chip.active span {
-  color: var(--white);
+  color: var(--black);
 }
 
 /* Exactly 4 PIN Dots */
@@ -659,12 +670,13 @@ button {
   width: 0.85rem;
   height: 0.85rem;
   border-radius: 50%;
-  border: 1px solid var(--black);
+  border: 1px solid rgba(255, 255, 255, 0.5);
   background: transparent;
   transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .pin-dot.filled {
-  background: var(--black);
+  background: var(--white);
+  border-color: var(--white);
   transform: scale(1.15);
 }
 
@@ -679,21 +691,21 @@ button {
   font-family: var(--font-serif);
   font-size: 1.6rem;
   font-weight: 400;
-  border: 1px solid var(--light-gray);
-  background: var(--white);
-  color: var(--black);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: #141414;
+  color: var(--white);
   display: grid;
   place-items: center;
   transition: all 0.15s ease;
 }
 .keypad-btn:hover {
-  border-color: var(--black);
-  background: var(--off-white);
+  border-color: var(--white);
+  background: #1f1f1f;
 }
 .keypad-btn:active {
-  background: var(--black);
-  color: var(--white);
-  border-color: var(--black);
+  background: var(--white);
+  color: var(--black);
+  border-color: var(--white);
 }
 .keypad-btn.action-btn {
   font-family: var(--font-sans);
@@ -701,6 +713,17 @@ button {
   font-weight: 600;
   letter-spacing: 0.15em;
   color: var(--muted-gray);
+}
+
+.pin-card .primary-button {
+  background: var(--white);
+  color: var(--black);
+  border-color: var(--white);
+}
+.pin-card .primary-button:hover:not(:disabled) {
+  background: transparent;
+  color: var(--white);
+  border-color: var(--white);
 }
 
 .pin-submit-btn {
