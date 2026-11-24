@@ -5,6 +5,7 @@ import {
   postCategory,
   putCategory,
   patchCategoryStatus,
+  removeCategory,
   getMenuItems,
   postMenuItem,
   putMenuItem,
@@ -22,6 +23,7 @@ router.get("/categories", getCategories);
 router.post("/categories", postCategory);
 router.put("/categories/:id", putCategory);
 router.patch("/categories/:id/status", patchCategoryStatus);
+router.delete("/categories/:id", removeCategory);
 
 // ── Menu Items ───────────────────────────────────────────────────────────────
 router.get("/items", getMenuItems);

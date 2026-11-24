@@ -1,22 +1,20 @@
 import { useState, useEffect } from 'react'
 import PropTypes from 'prop-types'
 
-export function CategoryModal({ isOpen, onClose, onSave, category }) {
+export function CategoryModal({ isOpen, onClose, onSave }) {
   const [name, setName] = useState('')
   const [sortOrder, setSortOrder] = useState(0)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
-  const isEditing = Boolean(category)
-
   useEffect(() => {
     if (isOpen) {
-      setName(category?.name || '')
-      setSortOrder(category?.sortOrder ?? 0)
+      setName('')
+      setSortOrder(0)
       setError('')
       setSaving(false)
     }
-  }, [isOpen, category])
+  }, [isOpen])
 
   useEffect(() => {
     if (!isOpen) return undefined
@@ -43,7 +41,7 @@ export function CategoryModal({ isOpen, onClose, onSave, category }) {
       await onSave({ name: trimmed, sortOrder })
       onClose()
     } catch (err) {
-      setError(err.message || 'Failed to save category.')
+      setError(err.message || 'Failed to create category.')
     } finally {
       setSaving(false)
     }
@@ -53,7 +51,7 @@ export function CategoryModal({ isOpen, onClose, onSave, category }) {
     <div className="modal-overlay" onClick={() => !saving && onClose()}>
       <div className="modal-dialog" onClick={(e) => e.stopPropagation()}>
         <span className="editorial-eyebrow">Category Configuration</span>
-        <h2 className="modal-title">{isEditing ? 'Edit Category' : 'New Category'}</h2>
+        <h2 className="modal-title">New Category</h2>
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">
@@ -87,7 +85,7 @@ export function CategoryModal({ isOpen, onClose, onSave, category }) {
               Cancel
             </button>
             <button type="submit" className="primary-button" disabled={saving}>
-              {saving ? 'Saving…' : isEditing ? 'Update Category' : 'Create Category'}
+              {saving ? 'Saving…' : 'Create Category'}
             </button>
           </div>
         </form>
@@ -100,5 +98,4 @@ CategoryModal.propTypes = {
   isOpen: PropTypes.bool.isRequired,
   onClose: PropTypes.func.isRequired,
   onSave: PropTypes.func.isRequired,
-  category: PropTypes.object,
 }

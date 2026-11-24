@@ -3,6 +3,7 @@ import {
   createCategory,
   updateCategory,
   setCategoryStatus,
+  deleteCategory,
   getAllMenuItems,
   createMenuItem,
   updateMenuItem,
@@ -55,6 +56,16 @@ export async function patchCategoryStatus(req, res, next) {
     const { isActive } = validateCategoryStatusToggle(req.body);
     const category = await setCategoryStatus(id, isActive);
     res.json(category);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function removeCategory(req, res, next) {
+  try {
+    const id = validateUuidParam(req.params.id, "categoryId");
+    const result = await deleteCategory(id);
+    res.json(result);
   } catch (error) {
     next(error);
   }

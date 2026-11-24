@@ -199,9 +199,21 @@ async function runTests() {
   }
   console.log("✓ Item restored (isActive: true).");
 
-  // 11. Soft-deactivate Category
-  console.log("\n11. Testing Category soft deactivation...");
-  const deactCatRes = await fetch(`${API_URL}/menu/categories/${newCat.id}/status`, {
+  // 11. Attempt to remove category with active item -> should reject with 409 CATEGORY_IN_USE
+  console.log("\n11. Testing Category removal protection when active items exist...");
+  const blockedDeleteRes = await fetch(`${API_URL}/menu/categories/${newCat.id}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${adminToken}` },
+  });
+  const blockedDelete = await blockedDeleteRes.json();
+  if (blockedDeleteRes.status !== 409 || blockedDelete?.error?.code !== "CATEGORY_IN_USE") {
+    throw new Error(`Expected 409 CATEGORY_IN_USE, got ${blockedDeleteRes.status}: ${JSON.stringify(blockedDelete)}`);
+  }
+  console.log("✓ Removal blocked while active items exist (409 CATEGORY_IN_USE).");
+
+  // 12. Archive item again, then remove category (soft-deactivates because archived item exists)
+  console.log("\n12. Archiving item then removing category...");
+  await fetch(`${API_URL}/menu/items/${newItem.id}/status`, {
     method: "PATCH",
     headers: {
       "Content-Type": "application/json",
@@ -209,11 +221,37 @@ async function runTests() {
     },
     body: JSON.stringify({ isActive: false }),
   });
-  const deactCat = await deactCatRes.json();
-  if (!deactCatRes.ok || deactCat.isActive !== false) {
-    throw new Error(`Failed to soft-deactivate category: ${JSON.stringify(deactCat)}`);
+
+  const deleteCatRes = await fetch(`${API_URL}/menu/categories/${newCat.id}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${adminToken}` },
+  });
+  const deleteCat = await deleteCatRes.json();
+  if (!deleteCatRes.ok || !deleteCat.ok) {
+    throw new Error(`Failed to remove category: ${JSON.stringify(deleteCat)}`);
   }
-  console.log("✓ Category soft-deactivated.");
+  console.log(`✓ Category removed (softDeleted: ${deleteCat.softDeleted}).`);
+
+  // 13. Create an empty category and delete it -> should hard delete
+  console.log("\n13. Testing hard removal of an empty category...");
+  const emptyCatRes = await fetch(`${API_URL}/menu/categories`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${adminToken}`,
+    },
+    body: JSON.stringify({ name: `Empty Cat ${Date.now()}`, sortOrder: 101 }),
+  });
+  const emptyCat = await emptyCatRes.json();
+  const deleteEmptyRes = await fetch(`${API_URL}/menu/categories/${emptyCat.id}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${adminToken}` },
+  });
+  const deleteEmpty = await deleteEmptyRes.json();
+  if (!deleteEmptyRes.ok || deleteEmpty.softDeleted !== false) {
+    throw new Error(`Expected hard delete of empty category, got: ${JSON.stringify(deleteEmpty)}`);
+  }
+  console.log("✓ Empty category hard-deleted.");
 
   console.log("\n===========================================");
   console.log("🎉 ALL MENU MANAGEMENT API TESTS PASSED! 🎉");

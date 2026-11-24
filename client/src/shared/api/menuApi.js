@@ -43,6 +43,12 @@ export function setCategoryStatus(id, isActive) {
   })
 }
 
+export function deleteCategory(id) {
+  return request(`/categories/${id}`, {
+    method: 'DELETE',
+  })
+}
+
 // ── Menu Items ───────────────────────────────────────────────────────────────
 
 export function getMenuItems(params = {}) {

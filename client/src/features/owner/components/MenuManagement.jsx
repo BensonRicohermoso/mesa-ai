@@ -2,8 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import {
   getCategories,
   createCategory,
-  updateCategory,
-  setCategoryStatus,
+  deleteCategory,
   getMenuItems,
   createMenuItem,
   updateMenuItem,
@@ -28,7 +27,6 @@ export function MenuManagement() {
 
   // Modals
   const [catModalOpen, setCatModalOpen] = useState(false)
-  const [editingCategory, setEditingCategory] = useState(null)
   const [itemModalOpen, setItemModalOpen] = useState(false)
   const [editingItem, setEditingItem] = useState(null)
 
@@ -90,79 +88,25 @@ export function MenuManagement() {
   }, [segmentItems, selectedCategoryId, searchQuery])
 
   // ── Category Handlers ──────────────────────────────────────────────────────
-  function openNewCategory() {
-    setEditingCategory(null)
-    setCatModalOpen(true)
+  async function handleCreateCategory(data) {
+    const created = await createCategory(data)
+    setCategories((prev) =>
+      [...prev, created].sort((a, b) => a.sortOrder - b.sortOrder)
+    )
+    showNotice(`Category "${created.name}" created.`)
   }
 
-  function openEditCategory(cat) {
-    setEditingCategory(cat)
-    setCatModalOpen(true)
-  }
-
-  async function handleSaveCategory(data) {
-    if (editingCategory) {
-      const updated = await updateCategory(editingCategory.id, data)
-      setCategories((prev) =>
-        prev
-          .map((c) => (c.id === updated.id ? { ...c, ...updated } : c))
-          .sort((a, b) => a.sortOrder - b.sortOrder)
-      )
-      showNotice(`Category "${updated.name}" updated.`)
-    } else {
-      const created = await createCategory(data)
-      setCategories((prev) =>
-        [...prev, created].sort((a, b) => a.sortOrder - b.sortOrder)
-      )
-      showNotice(`Category "${created.name}" created.`)
-    }
-  }
-
-  async function handleToggleCategoryStatus(cat) {
+  async function handleRemoveCategory(cat) {
     try {
       setError('')
-      const updated = await setCategoryStatus(cat.id, !cat.isActive)
-      setCategories((prev) =>
-        prev.map((c) => (c.id === updated.id ? { ...c, ...updated } : c))
-      )
-      showNotice(
-        `Category "${updated.name}" ${updated.isActive ? 'restored' : 'archived'}.`
-      )
+      await deleteCategory(cat.id)
+      setCategories((prev) => prev.filter((c) => c.id !== cat.id))
+      if (selectedCategoryId === cat.id) {
+        setSelectedCategoryId(null)
+      }
+      showNotice(`Category "${cat.name}" removed.`)
     } catch (err) {
-      setError(err.message)
-    }
-  }
-
-  async function handleMoveCategory(index, direction) {
-    const targetIndex = index + direction
-    if (targetIndex < 0 || targetIndex >= categories.length) return
-
-    const current = categories[index]
-    const adjacent = categories[targetIndex]
-
-    // Ensure distinct sortOrder values even if both had the same number
-    const nextCurrentOrder =
-      adjacent.sortOrder !== current.sortOrder
-        ? adjacent.sortOrder
-        : Math.max(0, current.sortOrder + direction)
-    const nextAdjacentOrder =
-      adjacent.sortOrder !== current.sortOrder
-        ? current.sortOrder
-        : Math.max(0, adjacent.sortOrder - direction)
-
-    try {
-      setError('')
-      const [u1, u2] = await Promise.all([
-        updateCategory(current.id, { name: current.name, sortOrder: nextCurrentOrder }),
-        updateCategory(adjacent.id, { name: adjacent.name, sortOrder: nextAdjacentOrder }),
-      ])
-      setCategories((prev) =>
-        prev
-          .map((c) => (c.id === u1.id ? { ...c, ...u1 } : c.id === u2.id ? { ...c, ...u2 } : c))
-          .sort((a, b) => a.sortOrder - b.sortOrder)
-      )
-    } catch (err) {
-      setError(err.message)
+      setError(err.message || 'Failed to remove category.')
     }
   }
 
@@ -239,7 +183,7 @@ export function MenuManagement() {
             <button
               type="button"
               className="action-pill action-pill--small"
-              onClick={openNewCategory}
+              onClick={() => setCatModalOpen(true)}
             >
               + New
             </button>
@@ -256,57 +200,25 @@ export function MenuManagement() {
                 <span className="category-count">{segmentItems.length}</span>
               </button>
             </li>
-            {categories.map((cat, idx) => (
-              <li key={cat.id}>
+            {categories.map((cat) => (
+              <li key={cat.id} className="category-row">
                 <button
                   type="button"
-                  className={`category-item ${selectedCategoryId === cat.id ? 'category-item--active' : ''} ${!cat.isActive ? 'category-item--inactive' : ''}`}
+                  className={`category-item ${selectedCategoryId === cat.id ? 'category-item--active' : ''}`}
                   onClick={() => setSelectedCategoryId(cat.id)}
                 >
-                  <span>
-                    {cat.name}
-                    {!cat.isActive && <em className="inactive-label"> (Archived)</em>}
-                  </span>
+                  <span>{cat.name}</span>
                   <span className="category-count">{categoryCounts.get(cat.id) || 0}</span>
                 </button>
-                <div className="category-actions">
-                  <button
-                    type="button"
-                    className="quiet-link"
-                    onClick={() => openEditCategory(cat)}
-                  >
-                    Edit
-                  </button>
-                  <button
-                    type="button"
-                    className="quiet-link"
-                    onClick={() => handleToggleCategoryStatus(cat)}
-                  >
-                    {cat.isActive ? 'Archive' : 'Restore'}
-                  </button>
-                  <span className="category-reorder">
-                    <button
-                      type="button"
-                      className="quiet-link"
-                      onClick={() => handleMoveCategory(idx, -1)}
-                      disabled={idx === 0}
-                      title="Move category up"
-                      aria-label={`Move ${cat.name} up`}
-                    >
-                      ↑
-                    </button>
-                    <button
-                      type="button"
-                      className="quiet-link"
-                      onClick={() => handleMoveCategory(idx, 1)}
-                      disabled={idx === categories.length - 1}
-                      title="Move category down"
-                      aria-label={`Move ${cat.name} down`}
-                    >
-                      ↓
-                    </button>
-                  </span>
-                </div>
+                <button
+                  type="button"
+                  className="category-remove-btn"
+                  onClick={() => handleRemoveCategory(cat)}
+                  title={`Remove ${cat.name}`}
+                  aria-label={`Remove ${cat.name}`}
+                >
+                  ×
+                </button>
               </li>
             ))}
           </ul>
@@ -439,8 +351,7 @@ export function MenuManagement() {
       <CategoryModal
         isOpen={catModalOpen}
         onClose={() => setCatModalOpen(false)}
-        onSave={handleSaveCategory}
-        category={editingCategory}
+        onSave={handleCreateCategory}
       />
       <MenuItemModal
         isOpen={itemModalOpen}
