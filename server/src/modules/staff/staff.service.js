@@ -234,6 +234,10 @@ export async function provisionStaff({
 
 /**
  * Update a staff member's profile, role, active state, PIN, or password.
+ *
+ * To avoid a non-atomic update where Auth rejects the password change but
+ * staff_profiles is already modified, we validate the Auth update FIRST
+ * and only commit the profile change afterwards.
  */
 export async function updateStaff(id, updates) {
   const current = await getStaffProfileById(id);
@@ -244,31 +248,7 @@ export async function updateStaff(id, updates) {
 
   await assertNotLastActiveAdmin(current, nextRole, nextActive);
 
-  const profileUpdates = {};
-  if (updates.fullName !== undefined) profileUpdates.full_name = updates.fullName;
-  if (updates.role !== undefined) profileUpdates.role = updates.role;
-  if (updates.isActive !== undefined) profileUpdates.is_active = updates.isActive;
-
-  // Sync pin_code to staff_profiles when updating
-  if (updates.pinCode !== undefined) {
-    profileUpdates.pin_code = updates.pinCode;
-  }
-
-  let updatedProfile = current;
-  if (Object.keys(profileUpdates).length > 0) {
-    const { data, error } = await supabase
-      .from("staff_profiles")
-      .update(profileUpdates)
-      .eq("id", id)
-      .select(STAFF_SELECT)
-      .single();
-
-    if (error) throw error;
-    updatedProfile = data;
-
-    await verifyActiveAdminInvariant(current, nextRole, nextActive);
-  }
-
+  // ── Step 1: Auth update FIRST (may reject weak password, etc.) ────────────
   const { data: existingAuth, error: fetchAuthError } =
     await supabase.auth.admin.getUserById(id);
   if (fetchAuthError || !existingAuth?.user) {
@@ -310,6 +290,32 @@ export async function updateStaff(id, updates) {
       );
     }
     authUser = updatedAuth.user;
+  }
+
+  // ── Step 2: Profile update (only after Auth succeeds) ─────────────────────
+  const profileUpdates = {};
+  if (updates.fullName !== undefined) profileUpdates.full_name = updates.fullName;
+  if (updates.role !== undefined) profileUpdates.role = updates.role;
+  if (updates.isActive !== undefined) profileUpdates.is_active = updates.isActive;
+
+  // Sync pin_code to staff_profiles when updating
+  if (updates.pinCode !== undefined) {
+    profileUpdates.pin_code = updates.pinCode;
+  }
+
+  let updatedProfile = current;
+  if (Object.keys(profileUpdates).length > 0) {
+    const { data, error } = await supabase
+      .from("staff_profiles")
+      .update(profileUpdates)
+      .eq("id", id)
+      .select(STAFF_SELECT)
+      .single();
+
+    if (error) throw error;
+    updatedProfile = data;
+
+    await verifyActiveAdminInvariant(current, nextRole, nextActive);
   }
 
   const activeAdminCount = await countActiveAdmins();

@@ -98,21 +98,35 @@ export function validateMenuItem(body) {
   }
   const imageUrl = rawImageUrl || null;
 
-  const price = Number(body?.price);
-  if (Number.isNaN(price) || price < 0) {
+  if (body?.price === null || body?.price === undefined || body?.price === "") {
     throw createAuthError(
       400,
       "VALIDATION_ERROR",
-      "price must be a non-negative number."
+      "price is required and must be a non-negative number."
+    );
+  }
+  const price = Number(body.price);
+  if (!Number.isFinite(price) || price < 0) {
+    throw createAuthError(
+      400,
+      "VALIDATION_ERROR",
+      "price must be a finite non-negative number."
     );
   }
 
-  const costPrice = Number(body?.costPrice);
-  if (Number.isNaN(costPrice) || costPrice < 0) {
+  if (body?.costPrice === null || body?.costPrice === undefined || body?.costPrice === "") {
     throw createAuthError(
       400,
       "VALIDATION_ERROR",
-      "costPrice must be a non-negative number."
+      "costPrice is required and must be a non-negative number."
+    );
+  }
+  const costPrice = Number(body.costPrice);
+  if (!Number.isFinite(costPrice) || costPrice < 0) {
+    throw createAuthError(
+      400,
+      "VALIDATION_ERROR",
+      "costPrice must be a finite non-negative number."
     );
   }
 

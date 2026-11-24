@@ -9,7 +9,7 @@ import {
 import { StaffModal } from './StaffModal.jsx'
 
 export function StaffManagement() {
-  const { staff: currentOperator } = useAuth()
+  const { staff: currentOperator, logout } = useAuth()
   const [staffList, setStaffList] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -84,6 +84,19 @@ export function StaffManagement() {
   async function handleSaveStaff(data) {
     if (editingStaff) {
       await updateStaff(editingStaff.id, data)
+
+      // If the admin just deactivated or demoted themselves, the session is
+      // now invalid (subsequent admin-only API calls will 403). Sign out
+      // cleanly instead of leaving a broken UI.
+      const isSelf = currentOperator?.id === editingStaff.id
+      if (isSelf) {
+        const demotedSelf = data.role !== undefined && data.role !== 'admin'
+        const deactivatedSelf = data.isActive === false
+        if (demotedSelf || deactivatedSelf) {
+          await logout()
+          return
+        }
+      }
     } else {
       await createStaff(data)
     }
@@ -96,6 +109,15 @@ export function StaffManagement() {
     try {
       setError('')
       await setStaffStatus(member.id, !member.isActive)
+
+      // If the admin just deactivated themselves, sign out cleanly
+      const isSelf = currentOperator?.id === member.id
+      if (isSelf && member.isActive) {
+        // Was active, now toggled to inactive
+        await logout()
+        return
+      }
+
       await loadStaff()
     } catch (err) {
       setError(err.message || 'Failed to update staff status.')
