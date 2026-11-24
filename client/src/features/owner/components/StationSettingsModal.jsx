@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import PropTypes from 'prop-types'
 import { PasswordInput } from '../../../shared/components/PasswordInput.jsx'
 
@@ -8,7 +8,7 @@ export function StationSettingsModal({ isOpen, onClose, session, logout, updateP
   const [isUpdatingPin, setIsUpdatingPin] = useState(false)
   const [lastOpenState, setLastOpenState] = useState(false)
 
-  // Reset form state when modal transitions from closed → open
+  // Reset form state when modal transitions from closed -> open
   if (isOpen && !lastOpenState) {
     setNewPin('')
     setPinFeedback('')
@@ -16,6 +16,15 @@ export function StationSettingsModal({ isOpen, onClose, session, logout, updateP
   if (isOpen !== lastOpenState) {
     setLastOpenState(isOpen)
   }
+
+  useEffect(() => {
+    if (!isOpen) return undefined
+    function handleKeyDown(e) {
+      if (e.key === 'Escape' && !isUpdatingPin) onClose()
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isOpen, isUpdatingPin, onClose])
 
   if (!isOpen) return null
 
@@ -39,24 +48,25 @@ export function StationSettingsModal({ isOpen, onClose, session, logout, updateP
     }
   }
 
-  function handleOverlayClick(e) {
-    if (e.target === e.currentTarget) onClose()
-  }
-
-  function handleKeyDown(e) {
-    if (e.key === 'Escape') onClose()
+  async function handleLogout() {
+    onClose()
+    await logout()
   }
 
   return (
-    /* eslint-disable-next-line jsx-a11y/no-static-element-interactions */
     <div
       className="modal-overlay"
-      onClick={handleOverlayClick}
-      onKeyDown={handleKeyDown}
+      onClick={() => !isUpdatingPin && onClose()}
     >
-      <div className="modal-dialog modal-dialog--wide" role="dialog" aria-label="Station Settings">
+      <div
+        className="modal-dialog modal-dialog--wide"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="station-settings-title"
+        onClick={(e) => e.stopPropagation()}
+      >
         <span className="editorial-eyebrow">Station &amp; Identity</span>
-        <h2 className="modal-title">Station Settings</h2>
+        <h2 id="station-settings-title" className="modal-title">Station Settings</h2>
 
         {/* Session Grid */}
         <div className="owner-session" aria-label="Current terminal session metrics">
@@ -114,10 +124,10 @@ export function StationSettingsModal({ isOpen, onClose, session, logout, updateP
 
         {/* Modal actions */}
         <div className="modal-actions">
-          <button className="quiet-button" type="button" onClick={logout}>
+          <button className="quiet-button" type="button" onClick={handleLogout}>
             Sign out of station shift &rarr;
           </button>
-          <button className="action-pill" type="button" onClick={onClose}>
+          <button className="action-pill" type="button" onClick={onClose} disabled={isUpdatingPin}>
             Close
           </button>
         </div>

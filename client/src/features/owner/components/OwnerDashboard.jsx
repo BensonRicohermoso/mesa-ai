@@ -26,7 +26,14 @@ const STATUS_LABELS = {
   expired: 'Expired',
 }
 
-export function OwnerDashboard({ filter, onNavigateReports }) {
+export function OwnerDashboard({
+  filter,
+  refreshNonce = 0,
+  onNavigateReports,
+  onSwitchToPreview,
+  onResetRange,
+  onLoadingChange,
+}) {
   const [summary, setSummary] = useState(null)
   const [trends, setTrends] = useState(null)
   const [topItems, setTopItems] = useState(null)
@@ -34,12 +41,23 @@ export function OwnerDashboard({ filter, onNavigateReports }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [granularityOverride, setGranularityOverride] = useState(null)
+  const [prevRangeKey, setPrevRangeKey] = useState(`${filter.from}|${filter.to}`)
+  const [localRetryCount, setLocalRetryCount] = useState(0)
+
+  const rangeKey = `${filter.from}|${filter.to}`
+  if (rangeKey !== prevRangeKey) {
+    setPrevRangeKey(rangeKey)
+    if (granularityOverride !== null) {
+      setGranularityOverride(null)
+    }
+  }
 
   // Derive default granularity from date range; allow manual override
   const granularity = granularityOverride ?? (filter.from === filter.to ? 'hour' : 'day')
 
   const fetchData = useCallback(async (signal) => {
     setLoading(true)
+    onLoadingChange?.(true)
     setError(null)
 
     const params = {
@@ -52,23 +70,23 @@ export function OwnerDashboard({ filter, onNavigateReports }) {
     try {
       if (filter.sourceMode === 'preview') {
         const preset = filter.preset === 'custom' ? '7d' : filter.preset
-        // Use setTimeout(0) so React batches all setState calls together
         setSummary(getPreviewData('summary', preset))
         setTrends(getPreviewData('trends', preset, { granularity }))
         setTopItems(getPreviewData('menu-engineering', preset, { limit: 5 }))
         setRecentOrders(getPreviewData('recent-orders', preset))
-        setLoading(false)
         return
       }
 
       const results = await Promise.all([
-        getAnalyticsSummary(params, { signal }),
-        getAnalyticsTrends({ ...params, granularity }, { signal }),
+        getAnalyticsSummary({ ...params, compare: 'true' }, { signal }),
+        getAnalyticsTrends(
+          { ...params, granularity, compare: filter.compare ? 'true' : undefined },
+          { signal },
+        ),
         getMenuEngineering({ ...params, limit: 5 }, { signal }),
         getRecentAnalyticsOrders({ ...params, limit: 8 }, { signal }),
       ])
 
-      // Check abort after await (signal may have fired during network wait)
       if (signal.aborted) return
 
       setSummary(results[0])
@@ -79,25 +97,29 @@ export function OwnerDashboard({ filter, onNavigateReports }) {
       if (err.name === 'AbortError' || signal.aborted) return
       const status = err.status || err.statusCode
       if (status === 401 || status === 403) {
-        setError({ type: 'auth', message: 'Authentication required. Please sign in again.' })
+        setError({ type: 'auth', message: 'Authentication required. Please sign in again to view analytics.' })
       } else if (status === 404 || status === 501) {
-        setError({ type: 'not-ready', message: 'Analytics API is not yet available. Enable Preview Fixtures to see sample data.' })
+        setError({
+          type: 'not-ready',
+          message: 'Analytics API Pending Dev 1 Integration — /api/analytics/* endpoints are not yet active.',
+        })
       } else {
         setError({ type: 'server', message: err.message || 'Failed to load analytics data.' })
       }
     } finally {
       if (!signal.aborted) {
         setLoading(false)
+        onLoadingChange?.(false)
       }
     }
-  }, [filter, granularity])
+  }, [filter, granularity, onLoadingChange])
 
   useEffect(() => {
     const ac = new AbortController()
     // oxlint-disable-next-line react/set-state-in-effect -- async fetch is the standard pattern
     fetchData(ac.signal)
     return () => ac.abort()
-  }, [fetchData])
+  }, [fetchData, refreshNonce, localRetryCount])
 
   const kpis = summary?.kpis
   const deltas = summary?.deltasPct
@@ -130,10 +152,30 @@ export function OwnerDashboard({ filter, onNavigateReports }) {
         <div className="mgmt-error">{error.message}</div>
         {error.type === 'not-ready' && (
           <p className="owner-subtitle">
-            The analytics backend has not been deployed yet. Toggle to <strong>Preview</strong> mode
-            in the toolbar to explore the dashboard with sample fixtures.
+            Once Dev 1 mounts the analytics endpoints, click Retry Live API. In the meantime, you can
+            preview the dashboard layout with static sample fixtures.
           </p>
         )}
+        <div className="dashboard-error-actions">
+          {error.type !== 'auth' && (
+            <button
+              type="button"
+              className="action-pill"
+              onClick={() => setLocalRetryCount((c) => c + 1)}
+            >
+              Retry Live API
+            </button>
+          )}
+          {error.type === 'not-ready' && onSwitchToPreview && (
+            <button
+              type="button"
+              className="action-pill action-pill--solid"
+              onClick={onSwitchToPreview}
+            >
+              Preview With Sample Fixtures
+            </button>
+          )}
+        </div>
       </div>
     )
   }
@@ -142,10 +184,17 @@ export function OwnerDashboard({ filter, onNavigateReports }) {
   if (kpis && kpis.paidOrdersCount === 0) {
     return (
       <div className="dashboard-empty-state">
-        <h2>No Orders Yet</h2>
+        <h2>No Paid Orders In Range</h2>
         <p className="owner-subtitle">
-          Once customers place and pay for orders, your executive dashboard will populate automatically.
+          No paid orders match the current date range and filters.
         </p>
+        {onResetRange && (
+          <div className="dashboard-error-actions">
+            <button type="button" className="action-pill" onClick={onResetRange}>
+              Reset Date Range
+            </button>
+          </div>
+        )}
       </div>
     )
   }
@@ -322,5 +371,9 @@ OwnerDashboard.propTypes = {
     categoryId: PropTypes.string,
     paymentMethod: PropTypes.string,
   }).isRequired,
+  refreshNonce: PropTypes.number,
   onNavigateReports: PropTypes.func,
+  onSwitchToPreview: PropTypes.func,
+  onResetRange: PropTypes.func,
+  onLoadingChange: PropTypes.func,
 }

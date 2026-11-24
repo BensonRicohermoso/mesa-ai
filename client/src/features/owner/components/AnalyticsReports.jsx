@@ -43,16 +43,25 @@ const STATUS_LABELS = {
   expired: 'Expired',
 }
 
-export function AnalyticsReports({ filter, subView, onSubViewChange }) {
+export function AnalyticsReports({
+  filter,
+  subView,
+  onSubViewChange,
+  refreshNonce = 0,
+  onSwitchToPreview,
+  onLoadingChange,
+}) {
   const [data, setData] = useState({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [localRetryCount, setLocalRetryCount] = useState(0)
 
   // Menu engineering local state
   const [quadrantFilter, setQuadrantFilter] = useState('all')
   const [engSortKey, setEngSortKey] = useState('unitsSold')
   const [engSortDir, setEngSortDir] = useState('desc')
   const [includeArchived, setIncludeArchived] = useState(false)
+  const [selectedItemId, setSelectedItemId] = useState(null)
 
   // Orders audit pagination — reset to page 0 when filters change
   const [ordersPage, setOrdersPage] = useState(0)
@@ -65,10 +74,14 @@ export function AnalyticsReports({ filter, subView, onSubViewChange }) {
     if (ordersPage !== 0) {
       setOrdersPage(0)
     }
+    if (selectedItemId !== null) {
+      setSelectedItemId(null)
+    }
   }
 
   const fetchData = useCallback(async (signal) => {
     setLoading(true)
+    onLoadingChange?.(true)
     setError(null)
 
     const params = {
@@ -88,13 +101,12 @@ export function AnalyticsReports({ filter, subView, onSubViewChange }) {
           performance: getPreviewData('performance', preset),
           recentOrders: getPreviewData('recent-orders', preset),
         })
-        setLoading(false)
         return
       }
 
       const results = await Promise.all([
-        getAnalyticsSummary({ ...params, compare: filter.compare ? 'true' : undefined }, { signal }),
-        getAnalyticsTrends(params, { signal }),
+        getAnalyticsSummary({ ...params, compare: 'true' }, { signal }),
+        getAnalyticsTrends({ ...params, compare: 'true' }, { signal }),
         getMenuEngineering({ ...params, includeArchived: includeArchived ? 'true' : undefined }, { signal }),
         getPerformanceAnalytics(params, { signal }),
         getRecentAnalyticsOrders({ ...params, limit: 50 }, { signal }),
@@ -113,36 +125,41 @@ export function AnalyticsReports({ filter, subView, onSubViewChange }) {
       if (err.name === 'AbortError' || signal.aborted) return
       const status = err.status || err.statusCode
       if (status === 401 || status === 403) {
-        setError({ type: 'auth', message: 'Authentication required. Please sign in again.' })
+        setError({ type: 'auth', message: 'Authentication required. Please sign in again to view reports.' })
       } else if (status === 404 || status === 501) {
-        setError({ type: 'not-ready', message: 'Analytics API is not yet available. Enable Preview Fixtures to explore reports.' })
+        setError({
+          type: 'not-ready',
+          message: 'Analytics API Pending Dev 1 Integration — /api/analytics/* endpoints are not yet active.',
+        })
       } else {
         setError({ type: 'server', message: err.message || 'Failed to load analytics data.' })
       }
     } finally {
       if (!signal.aborted) {
         setLoading(false)
+        onLoadingChange?.(false)
       }
     }
-  }, [filter, includeArchived])
+  }, [filter, includeArchived, onLoadingChange])
 
   useEffect(() => {
     const ac = new AbortController()
     // oxlint-disable-next-line react/set-state-in-effect -- async fetch is the standard pattern
     fetchData(ac.signal)
     return () => ac.abort()
-  }, [fetchData])
+  }, [fetchData, refreshNonce, localRetryCount])
 
   // ── Menu engineering derived data ──
   const filteredItems = useMemo(() => {
     const items = data.menuEngineering?.items || []
-    let result = quadrantFilter === 'all' ? items : items.filter((i) => i.quadrant === quadrantFilter)
-    result = [...result].sort((a, b) => {
-      const aVal = a[engSortKey] ?? 0
-      const bVal = b[engSortKey] ?? 0
+    const base = quadrantFilter === 'all' ? items : items.filter((i) => i.quadrant === quadrantFilter)
+    return [...base].sort((a, b) => {
+      const aRaw = a[engSortKey]
+      const bRaw = b[engSortKey]
+      const aVal = Number.isFinite(Number(aRaw)) ? Number(aRaw) : Number.NEGATIVE_INFINITY
+      const bVal = Number.isFinite(Number(bRaw)) ? Number(bRaw) : Number.NEGATIVE_INFINITY
       return engSortDir === 'asc' ? aVal - bVal : bVal - aVal
     })
-    return result
   }, [data.menuEngineering, quadrantFilter, engSortKey, engSortDir])
 
   function handleEngSort(key) {
@@ -159,24 +176,40 @@ export function AnalyticsReports({ filter, subView, onSubViewChange }) {
     return engSortDir === 'asc' ? ' ▲' : ' ▼'
   }
 
+  function handleSelectMenuItem(item) {
+    if (!item?.menuItemId) return
+    setSelectedItemId((prev) => (prev === item.menuItemId ? null : item.menuItemId))
+  }
+
   // ── Paginated orders ──
   const allOrders = data.recentOrders?.orders || []
   const paginatedOrders = allOrders.slice(ordersPage * ordersPerPage, (ordersPage + 1) * ordersPerPage)
   const totalOrderPages = Math.ceil(allOrders.length / ordersPerPage)
+  const cashiers = data.performance?.cashier?.byCashier || []
 
-  // ── CSV export ──
-  function exportMenuEngineeringCsv() {
-    const items = filteredItems
+  // ── CSV exports ──
+  function exportOrdersCsv() {
+    if (allOrders.length === 0) return
     const csv = buildCsv(
-      ['Item', 'Category', 'Units Sold', 'Gross Sales (PHP)', 'COGS (PHP)', 'Gross Profit (PHP)', 'Unit Gross Profit (PHP)', 'Gross Margin %', 'Quadrant'],
+      ['Order Ref', 'Table', 'Order Status', 'Payment Status', 'Payment Method', 'Items', 'Total (PHP)', 'Gross Profit (PHP)', 'Gross Margin (%)', 'Created At'],
+      ['orderRef', 'tableCode', 'orderStatus', 'paymentStatus', 'paymentMethod', 'itemCount', 'total', 'grossProfit', 'grossMarginPct', 'createdAt'],
+      allOrders,
+    )
+    downloadCsv(csv, `orders-audit-${filter.from}-to-${filter.to}.csv`)
+  }
+
+  function exportMenuEngineeringCsv() {
+    if (filteredItems.length === 0) return
+    const csv = buildCsv(
+      ['Item', 'Category', 'Units Sold', 'Gross Sales (PHP)', 'COGS (PHP)', 'Gross Profit (PHP)', 'Unit Gross Profit (PHP)', 'Gross Margin (%)', 'Quadrant'],
       ['itemName', 'categoryName', 'unitsSold', 'grossSales', 'cogs', 'grossProfit', 'unitGrossProfit', 'grossMarginPct', 'quadrant'],
-      items,
+      filteredItems,
     )
     downloadCsv(csv, `menu-engineering-${filter.from}-to-${filter.to}.csv`)
   }
 
   function exportPerformanceCsv() {
-    const cashiers = data.performance?.cashier?.byCashier || []
+    if (cashiers.length === 0) return
     const csv = buildCsv(
       ['Staff', 'Confirmed', 'Total Amount (PHP)', 'Avg Handling (s)', 'Cash', 'GCash', 'Online'],
       ['fullName', 'confirmedCount', 'totalAmount', 'avgHandlingSeconds', 'cashCount', 'gcashCount', 'onlineCount'],
@@ -207,19 +240,57 @@ export function AnalyticsReports({ filter, subView, onSubViewChange }) {
   // ── Error ──
   if (error) {
     return (
-      <div className="analytics-reports">
+      <div className="analytics-reports dashboard-error-state">
         <div className="mgmt-error">{error.message}</div>
         {error.type === 'not-ready' && (
           <p className="owner-subtitle">
-            Toggle to <strong>Preview</strong> mode in the toolbar to explore reports with sample data.
+            Once Dev 1 mounts the analytics endpoints, click Retry Live API. In the meantime, toggle
+            Preview Fixtures to inspect all reports.
           </p>
         )}
+        <div className="dashboard-error-actions">
+          {error.type !== 'auth' && (
+            <button
+              type="button"
+              className="action-pill"
+              onClick={() => setLocalRetryCount((c) => c + 1)}
+            >
+              Retry Live API
+            </button>
+          )}
+          {error.type === 'not-ready' && onSwitchToPreview && (
+            <button
+              type="button"
+              className="action-pill action-pill--solid"
+              onClick={onSwitchToPreview}
+            >
+              Preview With Sample Fixtures
+            </button>
+          )}
+        </div>
       </div>
     )
   }
 
+  const activeSubLabel = SUB_VIEWS.find((v) => v.key === subView)?.label || 'Analytics Report'
+  const hasPerformanceData = Boolean(
+    data.performance?.cashier ||
+    data.performance?.kitchen ||
+    data.performance?.tables?.byTable?.length > 0
+  )
+
   return (
     <div className="analytics-reports analytics-print-report">
+      {/* Editorial print header (hidden on screen, visible when printing) */}
+      <div className="print-only-header">
+        <div className="print-only-eyebrow">MESA EXECUTIVE REPORT &bull; {activeSubLabel.toUpperCase()}</div>
+        <h2 className="print-only-title">Analytics &amp; Financial Performance</h2>
+        <div className="print-only-meta">
+          Period: {filter.from} to {filter.to} (Asia/Manila)
+          {filter.sourceMode === 'preview' ? ' • Sample Preview Fixtures' : ''}
+        </div>
+      </div>
+
       {/* Sub-view tabs */}
       <nav className="analytics-sub-tabs no-print">
         {SUB_VIEWS.map((v) => (
@@ -244,7 +315,7 @@ export function AnalyticsReports({ filter, subView, onSubViewChange }) {
                 { label: 'Gross Sales', value: formatPhp(data.summary.kpis?.grossSales), delta: data.summary.deltasPct.grossSales },
                 { label: 'Gross Profit', value: formatPhp(data.summary.kpis?.grossProfit), delta: data.summary.deltasPct.grossProfit },
                 { label: 'Gross Margin', value: formatPct(data.summary.kpis?.grossMarginPct), delta: data.summary.deltasPct.grossMarginPct },
-                { label: 'Orders', value: data.summary.kpis?.paidOrdersCount, delta: data.summary.deltasPct.paidOrdersCount },
+                { label: 'Orders', value: data.summary.kpis?.paidOrdersCount ?? '—', delta: data.summary.deltasPct.paidOrdersCount },
                 { label: 'AOV', value: formatPhp(data.summary.kpis?.averageOrderValue), delta: data.summary.deltasPct.averageOrderValue },
               ].map((k) => (
                 <div key={k.label} className="kpi-cell">
@@ -379,8 +450,16 @@ export function AnalyticsReports({ filter, subView, onSubViewChange }) {
             )}
           </div>
 
-          {/* Print */}
+          {/* Exports */}
           <div className="reports-actions no-print">
+            <button
+              type="button"
+              className="action-pill"
+              onClick={exportOrdersCsv}
+              disabled={allOrders.length === 0}
+            >
+              Export Orders CSV
+            </button>
             <button type="button" className="action-pill" onClick={handlePrintReport}>
               Print Editorial Report
             </button>
@@ -399,8 +478,12 @@ export function AnalyticsReports({ filter, subView, onSubViewChange }) {
                 <strong className="kpi-value">{data.menuEngineering.benchmarks.totalUnitsSold}</strong>
               </div>
               <div className="kpi-cell">
-                <span className="kpi-label">Total Gross Sales</span>
-                <strong className="kpi-value">{formatPhp(data.menuEngineering.benchmarks.totalGrossSales)}</strong>
+                <span className="kpi-label">Avg Popularity</span>
+                <strong className="kpi-value">{data.menuEngineering.benchmarks.avgPopularityUnits}</strong>
+              </div>
+              <div className="kpi-cell">
+                <span className="kpi-label">Avg Unit Gross Profit</span>
+                <strong className="kpi-value">{formatPhp(data.menuEngineering.benchmarks.avgUnitGrossProfit)}</strong>
               </div>
               <div className="kpi-cell">
                 <span className="kpi-label">Total Gross Profit</span>
@@ -446,6 +529,8 @@ export function AnalyticsReports({ filter, subView, onSubViewChange }) {
             <MenuEngineeringScatter
               items={filteredItems}
               benchmarks={data.menuEngineering?.benchmarks}
+              selectedItemId={selectedItemId}
+              onItemClick={handleSelectMenuItem}
             />
           </div>
 
@@ -466,29 +551,41 @@ export function AnalyticsReports({ filter, subView, onSubViewChange }) {
                       Gross Profit{sortIndicator('grossProfit')}
                     </th>
                     <th className="sortable-th" onClick={() => handleEngSort('unitGrossProfit')}>
-                      Unit GP{sortIndicator('unitGrossProfit')}
+                      Unit Gross Profit{sortIndicator('unitGrossProfit')}
                     </th>
                     <th className="sortable-th" onClick={() => handleEngSort('grossMarginPct')}>
-                      Margin %{sortIndicator('grossMarginPct')}
+                      Gross Margin %{sortIndicator('grossMarginPct')}
                     </th>
                     <th>Quadrant</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredItems.map((item) => (
-                    <tr key={item.menuItemId} className={!item.isActive ? 'editorial-row--inactive' : ''}>
-                      <td>
-                        <span className="top-item-name">{item.itemName}</span>
-                        <span className="top-item-category">{item.categoryName}</span>
-                      </td>
-                      <td>{item.unitsSold}</td>
-                      <td>{formatPhp(item.grossSales)}</td>
-                      <td>{formatPhp(item.grossProfit)}</td>
-                      <td>{formatPhp(item.unitGrossProfit)}</td>
-                      <td>{formatPct(item.grossMarginPct)}</td>
-                      <td style={{ textTransform: 'capitalize' }}>{item.quadrant}</td>
-                    </tr>
-                  ))}
+                  {filteredItems.map((item) => {
+                    const isSelected = selectedItemId === item.menuItemId
+                    const rowClasses = [
+                      !item.isActive ? 'editorial-row--inactive' : '',
+                      isSelected ? 'editorial-row--selected' : '',
+                    ].filter(Boolean).join(' ')
+                    return (
+                      <tr
+                        key={item.menuItemId}
+                        className={rowClasses || undefined}
+                        onClick={() => handleSelectMenuItem(item)}
+                        style={{ cursor: 'pointer' }}
+                      >
+                        <td>
+                          <span className="top-item-name">{item.itemName}</span>
+                          <span className="top-item-category">{item.categoryName}</span>
+                        </td>
+                        <td>{item.unitsSold}</td>
+                        <td>{formatPhp(item.grossSales)}</td>
+                        <td>{formatPhp(item.grossProfit)}</td>
+                        <td>{formatPhp(item.unitGrossProfit)}</td>
+                        <td>{formatPct(item.grossMarginPct)}</td>
+                        <td style={{ textTransform: 'capitalize' }}>{item.quadrant}</td>
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </table>
             </div>
@@ -498,7 +595,12 @@ export function AnalyticsReports({ filter, subView, onSubViewChange }) {
 
           {/* Export */}
           <div className="reports-actions no-print">
-            <button type="button" className="action-pill" onClick={exportMenuEngineeringCsv}>
+            <button
+              type="button"
+              className="action-pill"
+              onClick={exportMenuEngineeringCsv}
+              disabled={filteredItems.length === 0}
+            >
               Export CSV
             </button>
             <button type="button" className="action-pill" onClick={handlePrintReport}>
@@ -511,130 +613,141 @@ export function AnalyticsReports({ filter, subView, onSubViewChange }) {
       {/* ═══════════════ Floor & Kitchen Performance ═══════════════ */}
       {subView === 'performance' && (
         <div className="reports-section">
-          {/* Cashier KPIs */}
-          {data.performance?.cashier && (
+          {!hasPerformanceData ? (
+            <div className="mgmt-empty"><p>No floor or kitchen performance data available for this period.</p></div>
+          ) : (
             <>
-              <h3 className="dashboard-section-title">Cashier Performance</h3>
-              <div className="kpi-grid kpi-grid--compact">
-                <div className="kpi-cell">
-                  <span className="kpi-label">Payments Confirmed</span>
-                  <strong className="kpi-value">{data.performance.cashier.paymentsConfirmedCount}</strong>
-                </div>
-                <div className="kpi-cell">
-                  <span className="kpi-label">Avg Handling Time</span>
-                  <strong className="kpi-value">{formatDurationSeconds(data.performance.cashier.avgHandlingSeconds)}</strong>
-                </div>
-                <div className="kpi-cell">
-                  <span className="kpi-label">Median Handling Time</span>
-                  <strong className="kpi-value">{formatDurationSeconds(data.performance.cashier.medianHandlingSeconds)}</strong>
-                </div>
-              </div>
+              {/* Cashier KPIs */}
+              {data.performance?.cashier && (
+                <>
+                  <h3 className="dashboard-section-title">Cashier Performance</h3>
+                  <div className="kpi-grid kpi-grid--compact">
+                    <div className="kpi-cell">
+                      <span className="kpi-label">Payments Confirmed</span>
+                      <strong className="kpi-value">{data.performance.cashier.paymentsConfirmedCount}</strong>
+                    </div>
+                    <div className="kpi-cell">
+                      <span className="kpi-label">Avg Handling Time</span>
+                      <strong className="kpi-value">{formatDurationSeconds(data.performance.cashier.avgHandlingSeconds)}</strong>
+                    </div>
+                    <div className="kpi-cell">
+                      <span className="kpi-label">Median Handling Time</span>
+                      <strong className="kpi-value">{formatDurationSeconds(data.performance.cashier.medianHandlingSeconds)}</strong>
+                    </div>
+                  </div>
 
-              {/* Per-cashier table */}
-              {data.performance.cashier.byCashier?.length > 0 && (
-                <div className="editorial-table-wrap" style={{ marginTop: '1rem' }}>
-                  <table className="editorial-table">
-                    <thead>
-                      <tr>
-                        <th>Staff</th>
-                        <th>Confirmed</th>
-                        <th>Total Amount</th>
-                        <th>Avg Handling</th>
-                        <th>Cash</th>
-                        <th>GCash</th>
-                        <th>Online</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {data.performance.cashier.byCashier.map((c) => (
-                        <tr key={c.staffId}>
-                          <td>{c.fullName}</td>
-                          <td>{c.confirmedCount}</td>
-                          <td>{formatPhp(c.totalAmount)}</td>
-                          <td>{formatDurationSeconds(c.avgHandlingSeconds)}</td>
-                          <td>{c.cashCount}</td>
-                          <td>{c.gcashCount}</td>
-                          <td>{c.onlineCount}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                  {/* Per-cashier table */}
+                  {cashiers.length > 0 && (
+                    <div className="editorial-table-wrap" style={{ marginTop: '1rem' }}>
+                      <table className="editorial-table">
+                        <thead>
+                          <tr>
+                            <th>Staff</th>
+                            <th>Confirmed</th>
+                            <th>Total Amount</th>
+                            <th>Avg Handling</th>
+                            <th>Cash</th>
+                            <th>GCash</th>
+                            <th>Online</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {cashiers.map((c) => (
+                            <tr key={c.staffId}>
+                              <td>{c.fullName}</td>
+                              <td>{c.confirmedCount}</td>
+                              <td>{formatPhp(c.totalAmount)}</td>
+                              <td>{formatDurationSeconds(c.avgHandlingSeconds)}</td>
+                              <td>{c.cashCount}</td>
+                              <td>{c.gcashCount}</td>
+                              <td>{c.onlineCount}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </>
+              )}
+
+              {/* Kitchen Pipeline KPIs */}
+              {data.performance?.kitchen && (
+                <div className="reports-subsection">
+                  <h3 className="dashboard-section-title">Kitchen Pipeline</h3>
+                  <div className="kpi-grid kpi-grid--compact">
+                    <div className="kpi-cell">
+                      <span className="kpi-label">Completed Orders</span>
+                      <strong className="kpi-value">{data.performance.kitchen.completedOrdersCount}</strong>
+                    </div>
+                    <div className="kpi-cell">
+                      <span className="kpi-label">Avg Queue Wait</span>
+                      <strong className="kpi-value">{formatDurationSeconds(data.performance.kitchen.avgQueueWaitSeconds)}</strong>
+                    </div>
+                    <div className="kpi-cell">
+                      <span className="kpi-label">Avg Prep Time</span>
+                      <strong className="kpi-value">{formatDurationSeconds(data.performance.kitchen.avgPrepSeconds)}</strong>
+                    </div>
+                    <div className="kpi-cell">
+                      <span className="kpi-label">Avg Fulfillment</span>
+                      <strong className="kpi-value">{formatDurationSeconds(data.performance.kitchen.avgFulfillmentSeconds)}</strong>
+                    </div>
+                    <div className="kpi-cell">
+                      <span className="kpi-label">Active in Kitchen</span>
+                      <strong className="kpi-value">{data.performance.kitchen.activeInKitchenCount}</strong>
+                    </div>
+                  </div>
                 </div>
               )}
+
+              {/* Table Performance */}
+              {data.performance?.tables?.byTable?.length > 0 && (
+                <div className="reports-subsection">
+                  <h3 className="dashboard-section-title">Table Performance</h3>
+                  <div className="editorial-table-wrap">
+                    <table className="editorial-table">
+                      <thead>
+                        <tr>
+                          <th>Table</th>
+                          <th>Label</th>
+                          <th>Orders</th>
+                          <th>Gross Sales</th>
+                          <th>Gross Profit</th>
+                          <th>AOV</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {data.performance.tables.byTable.map((t) => (
+                          <tr key={t.tableId}>
+                            <td><span className="table-code-pill">{t.tableCode}</span></td>
+                            <td>{t.label}</td>
+                            <td>{t.orderCount}</td>
+                            <td>{formatPhp(t.grossSales)}</td>
+                            <td>{formatPhp(t.grossProfit)}</td>
+                            <td>{formatPhp(t.averageOrderValue)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* Export */}
+              <div className="reports-actions no-print">
+                <button
+                  type="button"
+                  className="action-pill"
+                  onClick={exportPerformanceCsv}
+                  disabled={cashiers.length === 0}
+                >
+                  Export Cashier CSV
+                </button>
+                <button type="button" className="action-pill" onClick={handlePrintReport}>
+                  Print Editorial Report
+                </button>
+              </div>
             </>
           )}
-
-          {/* Kitchen Pipeline KPIs */}
-          {data.performance?.kitchen && (
-            <div className="reports-subsection">
-              <h3 className="dashboard-section-title">Kitchen Pipeline</h3>
-              <div className="kpi-grid kpi-grid--compact">
-                <div className="kpi-cell">
-                  <span className="kpi-label">Completed Orders</span>
-                  <strong className="kpi-value">{data.performance.kitchen.completedOrdersCount}</strong>
-                </div>
-                <div className="kpi-cell">
-                  <span className="kpi-label">Avg Queue Wait</span>
-                  <strong className="kpi-value">{formatDurationSeconds(data.performance.kitchen.avgQueueWaitSeconds)}</strong>
-                </div>
-                <div className="kpi-cell">
-                  <span className="kpi-label">Avg Prep Time</span>
-                  <strong className="kpi-value">{formatDurationSeconds(data.performance.kitchen.avgPrepSeconds)}</strong>
-                </div>
-                <div className="kpi-cell">
-                  <span className="kpi-label">Avg Fulfillment</span>
-                  <strong className="kpi-value">{formatDurationSeconds(data.performance.kitchen.avgFulfillmentSeconds)}</strong>
-                </div>
-                <div className="kpi-cell">
-                  <span className="kpi-label">Active in Kitchen</span>
-                  <strong className="kpi-value">{data.performance.kitchen.activeInKitchenCount}</strong>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Table Performance */}
-          {data.performance?.tables?.byTable?.length > 0 && (
-            <div className="reports-subsection">
-              <h3 className="dashboard-section-title">Table Performance</h3>
-              <div className="editorial-table-wrap">
-                <table className="editorial-table">
-                  <thead>
-                    <tr>
-                      <th>Table</th>
-                      <th>Label</th>
-                      <th>Orders</th>
-                      <th>Gross Sales</th>
-                      <th>Gross Profit</th>
-                      <th>AOV</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.performance.tables.byTable.map((t) => (
-                      <tr key={t.tableId}>
-                        <td><span className="table-code-pill">{t.tableCode}</span></td>
-                        <td>{t.label}</td>
-                        <td>{t.orderCount}</td>
-                        <td>{formatPhp(t.grossSales)}</td>
-                        <td>{formatPhp(t.grossProfit)}</td>
-                        <td>{formatPhp(t.averageOrderValue)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-          {/* Export */}
-          <div className="reports-actions no-print">
-            <button type="button" className="action-pill" onClick={exportPerformanceCsv}>
-              Export Cashier CSV
-            </button>
-            <button type="button" className="action-pill" onClick={handlePrintReport}>
-              Print Editorial Report
-            </button>
-          </div>
         </div>
       )}
     </div>
@@ -653,4 +766,7 @@ AnalyticsReports.propTypes = {
   }).isRequired,
   subView: PropTypes.string.isRequired,
   onSubViewChange: PropTypes.func.isRequired,
+  refreshNonce: PropTypes.number,
+  onSwitchToPreview: PropTypes.func,
+  onLoadingChange: PropTypes.func,
 }

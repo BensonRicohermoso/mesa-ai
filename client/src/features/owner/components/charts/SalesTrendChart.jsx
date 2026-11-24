@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useId } from 'react'
 import PropTypes from 'prop-types'
 import {
   ResponsiveContainer,
@@ -32,7 +32,16 @@ ChartTooltip.propTypes = {
   label: PropTypes.string,
 }
 
+function formatYAxisPhp(v) {
+  if (!Number.isFinite(v)) return ''
+  if (Math.abs(v) < 1000) return `₱${Math.round(v)}`
+  const k = v / 1000
+  return Number.isInteger(k) ? `₱${k}k` : `₱${k.toFixed(1)}k`
+}
+
 export function SalesTrendChart({ data, showComparison }) {
+  const gradientId = useId().replace(/:/g, '')
+
   const chartData = useMemo(() => {
     if (!data || data.length === 0) return []
     return data.map((d) => ({
@@ -49,39 +58,39 @@ export function SalesTrendChart({ data, showComparison }) {
     <div className="chart-box">
       <ResponsiveContainer width="100%" height={280} minWidth={0}>
         <ComposedChart data={chartData} margin={{ top: 8, right: 16, bottom: 0, left: 8 }}>
-          <CartesianGrid stroke="rgba(255,255,255,0.08)" strokeDasharray="3 3" />
+          <CartesianGrid stroke="var(--chart-grid, rgba(255,255,255,0.08))" strokeDasharray="3 3" />
           <XAxis
             dataKey="name"
-            tick={{ fill: '#858585', fontSize: 11, fontFamily: 'var(--font-sans)' }}
-            axisLine={{ stroke: 'rgba(255,255,255,0.12)' }}
+            tick={{ fill: 'var(--chart-ink-muted, #858585)', fontSize: 11, fontFamily: 'var(--font-sans)' }}
+            axisLine={{ stroke: 'var(--chart-axis, rgba(255,255,255,0.12))' }}
             tickLine={false}
           />
           <YAxis
-            tick={{ fill: '#858585', fontSize: 11, fontFamily: 'var(--font-sans)' }}
+            tick={{ fill: 'var(--chart-ink-muted, #858585)', fontSize: 11, fontFamily: 'var(--font-sans)' }}
             axisLine={false}
             tickLine={false}
-            tickFormatter={(v) => `₱${(v / 1000).toFixed(0)}k`}
+            tickFormatter={formatYAxisPhp}
           />
           <Tooltip content={<ChartTooltip />} />
           <defs>
-            <linearGradient id="salesFill" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="rgba(255,255,255,0.16)" />
-              <stop offset="100%" stopColor="rgba(255,255,255,0)" />
+            <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="var(--chart-ink, #FFFFFF)" stopOpacity={0.16} />
+              <stop offset="100%" stopColor="var(--chart-ink, #FFFFFF)" stopOpacity={0} />
             </linearGradient>
           </defs>
           <Area
             type="monotone"
             dataKey="grossSales"
-            stroke="#FFFFFF"
+            stroke="var(--chart-ink, #FFFFFF)"
             strokeWidth={2}
-            fill="url(#salesFill)"
+            fill={`url(#${gradientId})`}
             isAnimationActive={false}
             name="Gross Sales"
           />
           <Line
             type="monotone"
             dataKey="grossProfit"
-            stroke="#999999"
+            stroke="var(--chart-ink-secondary, #999999)"
             strokeWidth={1.5}
             strokeDasharray="4 4"
             dot={false}
@@ -92,7 +101,7 @@ export function SalesTrendChart({ data, showComparison }) {
             <Line
               type="monotone"
               dataKey="previousGrossSales"
-              stroke="rgba(255,255,255,0.4)"
+              stroke="var(--chart-ink-faint, rgba(255,255,255,0.4))"
               strokeWidth={1}
               strokeDasharray="2 4"
               dot={false}

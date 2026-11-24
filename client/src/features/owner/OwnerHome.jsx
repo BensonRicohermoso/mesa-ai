@@ -19,13 +19,13 @@ const TABS = [
   { key: 'reports', label: '05 · Analytics & Reports' },
 ]
 
-function buildDefaultFilter() {
+function buildDefaultFilter(sourceMode = 'live') {
   const range = getPresetDateRange('7d')
   return {
     preset: '7d',
     from: range.from,
     to: range.to,
-    sourceMode: 'preview',
+    sourceMode,
     compare: false,
     categoryId: 'all',
     paymentMethod: 'all',
@@ -39,17 +39,25 @@ export function OwnerHome() {
   const [activeTab, setActiveTab] = useState('overview')
 
   // Shared analytics filter state (lifted for Overview + Reports)
-  const [analyticsFilter, setAnalyticsFilter] = useState(buildDefaultFilter)
+  const [analyticsFilter, setAnalyticsFilter] = useState(() => buildDefaultFilter('live'))
   const [reportsSubView, setReportsSubView] = useState('comparisons')
-  const [refreshKey, setRefreshKey] = useState(0)
+  const [refreshNonce, setRefreshNonce] = useState(0)
+  const [isAnalyticsLoading, setIsAnalyticsLoading] = useState(false)
 
   const handleRefresh = useCallback(() => {
-    setRefreshKey((k) => k + 1)
+    setRefreshNonce((k) => k + 1)
   }, [])
 
-  // Reset granularity override when user changes date preset via toolbar
   const handleFilterChange = useCallback((next) => {
     setAnalyticsFilter(next)
+  }, [])
+
+  const handleSwitchToPreview = useCallback(() => {
+    setAnalyticsFilter((prev) => ({ ...prev, sourceMode: 'preview' }))
+  }, [])
+
+  const handleResetRange = useCallback(() => {
+    setAnalyticsFilter((prev) => buildDefaultFilter(prev.sourceMode))
   }, [])
 
   const showToolbar = activeTab === 'overview' || activeTab === 'reports'
@@ -114,16 +122,19 @@ export function OwnerHome() {
               filter={analyticsFilter}
               onFilterChange={handleFilterChange}
               onRefresh={handleRefresh}
-              isLoading={false}
+              isLoading={isAnalyticsLoading}
             />
           )}
 
           {/* ── Tab Content ─────────────────────────────────────── */}
           {activeTab === 'overview' && (
             <OwnerDashboard
-              key={refreshKey}
               filter={analyticsFilter}
+              refreshNonce={refreshNonce}
               onNavigateReports={() => setActiveTab('reports')}
+              onSwitchToPreview={handleSwitchToPreview}
+              onResetRange={handleResetRange}
+              onLoadingChange={setIsAnalyticsLoading}
             />
           )}
 
@@ -133,12 +144,26 @@ export function OwnerHome() {
 
           {activeTab === 'reports' && (
             <AnalyticsReports
-              key={refreshKey}
               filter={analyticsFilter}
               subView={reportsSubView}
               onSubViewChange={setReportsSubView}
+              refreshNonce={refreshNonce}
+              onSwitchToPreview={handleSwitchToPreview}
+              onLoadingChange={setIsAnalyticsLoading}
             />
           )}
+
+          {/* ── Compact Station Footer Strip ──────────────────── */}
+          <footer className="owner-station-strip no-print">
+            <span className="owner-station-meta">
+              {session?.staff?.fullName || 'Operator'} &bull;{' '}
+              <span style={{ textTransform: 'uppercase' }}>{session?.staff?.role || 'admin'}</span> &bull;{' '}
+              {shiftRemainingFormatted || 'Shift In Progress'}
+            </span>
+            <button className="quiet-link" type="button" onClick={logout}>
+              Sign out &rarr;
+            </button>
+          </footer>
         </section>
       </div>
 

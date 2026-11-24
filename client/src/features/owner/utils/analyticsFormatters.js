@@ -27,30 +27,39 @@ const manilaTimestampFormatter = new Intl.DateTimeFormat('en-PH', {
   hour12: true,
 })
 
+function toFiniteNumber(value) {
+  if (value === null || value === undefined || value === '') return null
+  const num = Number(value)
+  return Number.isFinite(num) ? num : null
+}
+
 /** Format a numeric amount as PHP currency: ₱1,250.00 */
 export function formatPhp(amount) {
-  if (amount === null || amount === undefined) return '—'
-  return phpFormatter.format(Number(amount))
+  const n = toFiniteNumber(amount)
+  if (n === null) return '—'
+  return phpFormatter.format(n)
 }
 
 /** Format a percentage value: 61.9% */
 export function formatPct(value) {
-  if (value === null || value === undefined) return '—'
-  return `${Number(value).toFixed(1)}%`
+  const n = toFiniteNumber(value)
+  if (n === null) return '—'
+  return `${n.toFixed(1)}%`
 }
 
 /** Format a comparison delta: +12.4% / -3.1% / 0.0% */
 export function formatDelta(deltaPct) {
-  if (deltaPct === null || deltaPct === undefined) return '—'
-  const n = Number(deltaPct)
+  const n = toFiniteNumber(deltaPct)
+  if (n === null) return '—'
   const prefix = n > 0 ? '+' : ''
   return `${prefix}${n.toFixed(1)}%`
 }
 
 /** Format duration in seconds to human-readable: 42s or 3m 12s */
 export function formatDurationSeconds(seconds) {
-  if (seconds === null || seconds === undefined) return '—'
-  const s = Math.round(Number(seconds))
+  const n = toFiniteNumber(seconds)
+  if (n === null) return '—'
+  const s = Math.max(0, Math.round(n))
   if (s < 60) return `${s}s`
   const m = Math.floor(s / 60)
   const rem = s % 60
@@ -60,8 +69,10 @@ export function formatDurationSeconds(seconds) {
 /** Format an ISO timestamp to Asia/Manila local display */
 export function formatOrderTimestamp(iso) {
   if (!iso) return '—'
+  const date = new Date(iso)
+  if (Number.isNaN(date.getTime())) return '—'
   try {
-    return manilaTimestampFormatter.format(new Date(iso))
+    return manilaTimestampFormatter.format(date)
   } catch {
     return '—'
   }
@@ -69,48 +80,59 @@ export function formatOrderTimestamp(iso) {
 
 /**
  * Compute YYYY-MM-DD date bounds for a named preset using Asia/Manila timezone.
+ * Uses UTC calendar arithmetic on the Manila YYYY-MM-DD string so results do not
+ * depend on the host OS timezone.
  * Returns { from: 'YYYY-MM-DD', to: 'YYYY-MM-DD' }
  */
-export function getPresetDateRange(preset) {
-  const todayStr = manilaDateFormatter.format(new Date())
+export function getPresetDateRange(preset, now = new Date()) {
+  const todayStr = manilaDateFormatter.format(now)
 
   if (preset === 'today') {
     return { from: todayStr, to: todayStr }
   }
 
-  const todayDate = new Date(todayStr + 'T00:00:00+08:00')
+  const [year, month, day] = todayStr.split('-').map(Number)
+  const baseUtc = new Date(Date.UTC(year, month - 1, day))
 
   if (preset === '7d') {
-    const from = new Date(todayDate)
-    from.setDate(from.getDate() - 6)
-    return { from: formatDateLocal(from), to: todayStr }
+    baseUtc.setUTCDate(baseUtc.getUTCDate() - 6)
+    return { from: formatDateUtc(baseUtc), to: todayStr }
   }
 
   if (preset === '30d') {
-    const from = new Date(todayDate)
-    from.setDate(from.getDate() - 29)
-    return { from: formatDateLocal(from), to: todayStr }
+    baseUtc.setUTCDate(baseUtc.getUTCDate() - 29)
+    return { from: formatDateUtc(baseUtc), to: todayStr }
   }
 
   if (preset === 'month') {
-    const from = new Date(todayDate)
-    from.setDate(1)
-    return { from: formatDateLocal(from), to: todayStr }
+    baseUtc.setUTCDate(1)
+    return { from: formatDateUtc(baseUtc), to: todayStr }
   }
 
   return { from: todayStr, to: todayStr }
 }
 
-function formatDateLocal(date) {
-  const y = date.getFullYear()
-  const m = String(date.getMonth() + 1).padStart(2, '0')
-  const d = String(date.getDate()).padStart(2, '0')
+function formatDateUtc(date) {
+  const y = date.getUTCFullYear()
+  const m = String(date.getUTCMonth() + 1).padStart(2, '0')
+  const d = String(date.getUTCDate()).padStart(2, '0')
   return `${y}-${m}-${d}`
 }
 
-/** Validate a date range: both must be YYYY-MM-DD and from <= to */
+/** Validate a date range: both must be valid YYYY-MM-DD calendar dates and from <= to */
 export function isValidDateRange(from, to) {
   const dateRe = /^\d{4}-\d{2}-\d{2}$/
+  if (typeof from !== 'string' || typeof to !== 'string') return false
   if (!dateRe.test(from) || !dateRe.test(to)) return false
-  return from <= to
+  return isValidCalendarDate(from) && isValidCalendarDate(to) && from <= to
+}
+
+function isValidCalendarDate(dateStr) {
+  const [y, m, d] = dateStr.split('-').map(Number)
+  const dt = new Date(Date.UTC(y, m - 1, d))
+  return (
+    dt.getUTCFullYear() === y &&
+    dt.getUTCMonth() === m - 1 &&
+    dt.getUTCDate() === d
+  )
 }

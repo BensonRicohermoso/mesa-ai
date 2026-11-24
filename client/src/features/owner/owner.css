@@ -1033,6 +1033,37 @@ select.form-input option {
    Extends the owner dark editorial system.
    ═══════════════════════════════════════════════════════════════════════════ */
 
+.owner-shell {
+  --chart-ink: #ffffff;
+  --chart-ink-secondary: #999999;
+  --chart-ink-muted: #858585;
+  --chart-ink-faint: rgba(255, 255, 255, 0.4);
+  --chart-bar-muted: rgba(255, 255, 255, 0.22);
+  --chart-grid: rgba(255, 255, 255, 0.08);
+  --chart-axis: rgba(255, 255, 255, 0.12);
+  --chart-ref: rgba(255, 255, 255, 0.3);
+}
+
+.owner-station-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-top: 2.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.owner-station-meta {
+  font-family: var(--font-sans);
+  font-size: 0.65rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted-gray);
+}
+
 /* ── Analytics Toolbar ─────────────────────────────────────────────────── */
 
 .analytics-toolbar {
@@ -1069,11 +1100,24 @@ select.form-input option {
   padding: 0.45rem 0.7rem;
 }
 
+.analytics-date-inputs-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
 .analytics-date-inputs {
   display: flex;
   gap: 0.75rem;
   align-items: flex-end;
   flex-wrap: wrap;
+}
+
+.analytics-date-error {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: 0.72rem;
+  color: #ff9999;
 }
 
 .analytics-date-inputs .form-label {
@@ -1361,6 +1405,24 @@ select.form-input option {
   text-align: center;
 }
 
+.dashboard-error-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+}
+
+.editorial-row--selected {
+  background: rgba(255, 255, 255, 0.08) !important;
+  outline: 1px solid rgba(255, 255, 255, 0.35);
+}
+
+.print-only-header {
+  display: none;
+}
+
 .dashboard-empty-state h2 {
   font-family: var(--font-serif);
   font-size: 1.6rem;
@@ -1556,6 +1618,44 @@ select.form-input option {
   .analytics-print-report {
     color: var(--black) !important;
     background: #ffffff !important;
+    --chart-ink: #050505;
+    --chart-ink-secondary: #555555;
+    --chart-ink-muted: #333333;
+    --chart-ink-faint: #888888;
+    --chart-bar-muted: #d4d4d4;
+    --chart-grid: #e5e5e5;
+    --chart-axis: #cccccc;
+    --chart-ref: #666666;
+  }
+
+  .print-only-header {
+    display: block !important;
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid #050505;
+  }
+
+  .print-only-eyebrow {
+    font-family: var(--font-sans);
+    font-size: 0.62rem;
+    font-weight: 600;
+    letter-spacing: 0.22em;
+    color: #555555;
+    margin-bottom: 0.25rem;
+  }
+
+  .print-only-title {
+    font-family: var(--font-serif);
+    font-size: 1.5rem;
+    font-weight: 400;
+    color: #050505;
+    margin: 0 0 0.25rem;
+  }
+
+  .print-only-meta {
+    font-family: var(--font-sans);
+    font-size: 0.75rem;
+    color: #555555;
   }
 
   .analytics-print-report .kpi-cell {

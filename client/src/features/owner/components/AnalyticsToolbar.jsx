@@ -27,21 +27,32 @@ export function AnalyticsToolbar({
   const [categories, setCategories] = useState([])
   const fetchedCategories = useRef(false)
 
+  // Local draft dates allow users to type/adjust either end of a custom
+  // range freely without inputs snapping back when transiently invalid.
+  const [draftFrom, setDraftFrom] = useState(filter.from)
+  const [draftTo, setDraftTo] = useState(filter.to)
+  const [prevFilterRange, setPrevFilterRange] = useState(`${filter.from}|${filter.to}`)
+
+  const currentRangeKey = `${filter.from}|${filter.to}`
+  if (currentRangeKey !== prevFilterRange) {
+    setPrevFilterRange(currentRangeKey)
+    setDraftFrom(filter.from)
+    setDraftTo(filter.to)
+  }
+
   useEffect(() => {
-    // Fetch categories only once per mount, not on every filter change
     if (fetchedCategories.current) return
     fetchedCategories.current = true
     let cancelled = false
     getCategories()
       .then((res) => {
         if (!cancelled) {
-          // getCategories returns { categories: [...] } or possibly a plain array
           const list = Array.isArray(res) ? res : (res?.categories || [])
           setCategories(list)
         }
       })
       .catch(() => {
-        fetchedCategories.current = false // allow retry on next mount
+        fetchedCategories.current = false
       })
     return () => { cancelled = true }
   }, [])
@@ -52,17 +63,21 @@ export function AnalyticsToolbar({
       return
     }
     const range = getPresetDateRange(preset)
+    setDraftFrom(range.from)
+    setDraftTo(range.to)
     onFilterChange({ ...filter, preset, from: range.from, to: range.to })
   }
 
   function handleDateChange(field, value) {
-    const next = { ...filter, [field]: value, preset: 'custom' }
-    // Always update local state so the input stays in sync, but only
-    // propagate a valid range so child components don't fetch with bad dates.
-    if (isValidDateRange(next.from, next.to)) {
-      onFilterChange(next)
+    const nextFrom = field === 'from' ? value : draftFrom
+    const nextTo = field === 'to' ? value : draftTo
+
+    setDraftFrom(nextFrom)
+    setDraftTo(nextTo)
+
+    if (isValidDateRange(nextFrom, nextTo)) {
+      onFilterChange({ ...filter, preset: 'custom', from: nextFrom, to: nextTo })
     }
-    // If invalid (from > to), don't fire — let the user correct the other date
   }
 
   function handleSourceToggle() {
@@ -70,8 +85,10 @@ export function AnalyticsToolbar({
     onFilterChange({ ...filter, sourceMode: next })
   }
 
+  const hasInvalidCustomRange = filter.preset === 'custom' && !isValidDateRange(draftFrom, draftTo)
+
   return (
-    <div className="analytics-toolbar">
+    <div className="analytics-toolbar no-print">
       {/* Date Presets */}
       <div className="analytics-toolbar-row">
         <div className="segment-toggle">
@@ -124,31 +141,39 @@ export function AnalyticsToolbar({
 
       {/* Custom date inputs */}
       {filter.preset === 'custom' && (
-        <div className="analytics-date-inputs">
-          <label className="form-label">
-            From
-            <input
-              type="date"
-              className="form-input"
-              value={filter.from}
-              onChange={(e) => handleDateChange('from', e.target.value)}
-            />
-          </label>
-          <label className="form-label">
-            To
-            <input
-              type="date"
-              className="form-input"
-              value={filter.to}
-              onChange={(e) => handleDateChange('to', e.target.value)}
-            />
-          </label>
+        <div className="analytics-date-inputs-wrap">
+          <div className="analytics-date-inputs">
+            <label className="form-label">
+              From
+              <input
+                type="date"
+                className="form-input"
+                value={draftFrom}
+                onChange={(e) => handleDateChange('from', e.target.value)}
+              />
+            </label>
+            <label className="form-label">
+              To
+              <input
+                type="date"
+                className="form-input"
+                value={draftTo}
+                onChange={(e) => handleDateChange('to', e.target.value)}
+              />
+            </label>
+          </div>
+          {hasInvalidCustomRange && (
+            <p className="analytics-date-error" role="alert">
+              Enter valid dates where start date is on or before end date.
+            </p>
+          )}
         </div>
       )}
 
       {/* Filter row */}
       <div className="analytics-toolbar-filters">
         <select
+          aria-label="Filter by category"
           className="form-input analytics-filter-select"
           value={filter.categoryId || 'all'}
           onChange={(e) => onFilterChange({ ...filter, categoryId: e.target.value })}
@@ -160,6 +185,7 @@ export function AnalyticsToolbar({
         </select>
 
         <select
+          aria-label="Filter by payment method"
           className="form-input analytics-filter-select"
           value={filter.paymentMethod || 'all'}
           onChange={(e) => onFilterChange({ ...filter, paymentMethod: e.target.value })}
@@ -173,7 +199,7 @@ export function AnalyticsToolbar({
       {/* Preview banner */}
       {filter.sourceMode === 'preview' && (
         <div className="preview-banner" role="alert">
-          Preview Fixtures — Displaying static sample data. Analytics API not yet connected.
+          Preview Fixtures — Displaying static sample data. Toggle to Live to query the analytics API.
         </div>
       )}
     </div>
