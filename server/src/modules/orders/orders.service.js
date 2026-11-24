@@ -1,5 +1,5 @@
 import { supabase } from "../../config/supabase.js";
-import { env } from "../../config/env.js";
+import { env } from "../../config/server-config.js";
 
 // Convert PostgreSQL numeric values into JSON numbers.
 function toNumber(value) {
