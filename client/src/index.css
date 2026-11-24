@@ -1,5 +1,39 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap');
+:root {
+  --font-serif: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+  --font-sans: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-script: 'Pinyon Script', cursive;
 
-:root { font-family: 'DM Sans', 'Segoe UI', sans-serif; color: #14282b; background: #f7f2e8; font-synthesis: none; text-rendering: optimizeLegibility; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
-body { min-width: 320px; margin: 0; }
-button:focus-visible, input:focus-visible { outline: 3px solid rgba(239, 180, 69, 0.72); outline-offset: 3px; }
+  /* Monochromatic Luxury Palette */
+  --black: #050505;
+  --pure-black: #000000;
+  --white: #ffffff;
+  --off-white: #f7f7f5;
+  --light-gray: #eaeaea;
+  --muted-gray: #858585;
+  --dark-surface: #0a0a0a;
+
+  font-family: var(--font-sans);
+  color: var(--black);
+  background: var(--off-white);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+body {
+  min-width: 320px;
+  margin: 0;
+  background-color: var(--off-white);
+  color: var(--black);
+  overflow-x: hidden;
+}
+
+button:focus-visible, input:focus-visible {
+  outline: 1px solid var(--black);
+  outline-offset: 2px;
+}

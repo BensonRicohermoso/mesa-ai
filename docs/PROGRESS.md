@@ -110,6 +110,7 @@ Customer menu and cart UI at `/t/:tableCode`.
 - Implemented Quick PIN-based Staff Switching (`/api/auth/pin-switch`) with 4-digit tactile touch numpad UI.
 - Provisioned and verified active staff accounts (`Admin`, `Cashier`, `Kitchen Staff`) in Supabase Auth and `staff_profiles`.
 - Created documentation in `docs/STAFF_CREDENTIALS.md`.
+- Redesigned the UI and established project-wide Modern Monochrome Luxury Editorial design standards in `docs/DESIGN_SYSTEM.md`.
 
 ## How to Update This File
 

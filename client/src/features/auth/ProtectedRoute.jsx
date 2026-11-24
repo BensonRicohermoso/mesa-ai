@@ -13,8 +13,9 @@ export function ProtectedRoute({
     return (
       <main className="access-shell">
         <section className="access-card" aria-live="polite">
-          <p>Checking staff access</p>
-          <h1>One moment.</h1>
+          <span className="editorial-eyebrow">Station Security</span>
+          <h1>Verifying credentials.</h1>
+          <p className="login-intro">Synchronizing staff role permissions and active shift token…</p>
         </section>
       </main>
     )
@@ -24,11 +25,13 @@ export function ProtectedRoute({
     return (
       <main className="access-shell">
         <section className="access-card">
-          <p>Staff sign-in required</p>
-          <h1>Access starts here.</h1>
-          <p>Sign in with an active staff account to continue.</p>
+          <span className="editorial-eyebrow">Station Authentication Required</span>
+          <h1>Access restricted.</h1>
+          <p className="login-intro">
+            An active 6-hour staff session is required to interface with this station.
+          </p>
           <button className="primary-button" type="button" onClick={onGoToLogin}>
-            Go to sign in
+            Sign in with credentials &rarr;
           </button>
         </section>
       </main>
@@ -40,15 +43,17 @@ export function ProtectedRoute({
     return (
       <main className="access-shell">
         <section className="access-card">
-          <p>Role access</p>
-          <h1>This workspace is for {label.toLowerCase()} staff.</h1>
-          <p>
-            You are signed in as {session.staff.fullName}. Ask an administrator
-            if you need access to the {label.toLowerCase()} workspace.
+          <span className="editorial-eyebrow">Role Authorization</span>
+          <h1>Station reserved for {label.toLowerCase()} personnel.</h1>
+          <p className="login-intro">
+            Currently authenticated as <strong>{session.staff.fullName}</strong> ({session.staff.role}).
+            Consult management to request assignment to the {label.toLowerCase()} workspace.
           </p>
-          <button className="quiet-button" type="button" onClick={logout}>
-            Sign out
-          </button>
+          <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center', marginTop: '2rem' }}>
+            <button className="primary-button" type="button" onClick={logout}>
+              Switch account
+            </button>
+          </div>
         </section>
       </main>
     )

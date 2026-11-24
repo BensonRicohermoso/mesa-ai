@@ -12,7 +12,7 @@ export function OwnerHome() {
   async function handleSetPin(e) {
     e.preventDefault()
     if (!/^\d{4}$/.test(newPin.trim())) {
-      setPinFeedback('PIN must be exactly 4 numbers.')
+      setPinFeedback('PIN must be exactly 4 numeric digits.')
       return
     }
 
@@ -20,7 +20,7 @@ export function OwnerHome() {
     setPinFeedback('')
     try {
       await updatePin(newPin.trim())
-      setPinFeedback('Your 4-digit quick PIN is updated!')
+      setPinFeedback('Personal 4-digit shift PIN updated successfully.')
       setNewPin('')
     } catch (err) {
       setPinFeedback(err.message || 'Failed to update PIN.')
@@ -31,89 +31,103 @@ export function OwnerHome() {
 
   return (
     <main className="owner-shell">
-      <section className="owner-card">
-        <div className="owner-header-bar">
-          <p className="owner-eyebrow">Owner Workspace</p>
-          <div className="terminal-actions">
-            <button
-              className="action-pill"
-              type="button"
-              onClick={() => setIsPinModalOpen(true)}
-              title="Quick-switch shift operator without logging out master terminal"
-            >
-              🔄 Switch Staff (PIN)
-            </button>
-            <button
-              className="action-pill lock-pill"
-              type="button"
-              onClick={lockScreen}
-              title="Lock terminal screen immediately"
-            >
-              🔒 Lock Terminal
-            </button>
-          </div>
-        </div>
+      <div className="owner-container">
+        <section className="owner-card">
+          <header className="owner-header-bar">
+            <div>
+              <span className="editorial-eyebrow">Executive Atelier &bull; Verified Station</span>
+              <div className="brand" style={{ color: 'var(--black)', fontSize: '0.95rem' }}>
+                MESA <span className="brand-script" style={{ color: 'var(--muted-gray)' }}>administration</span>
+              </div>
+            </div>
 
-        <h1>Hello, {session?.staff?.fullName}.</h1>
-        <p>
-          Your terminal session is active with proactive refresh and idle auto-lock enabled.
-          Floor staff can switch shifts instantly using their 4-digit PIN.
-        </p>
+            <div className="terminal-actions">
+              <button
+                className="action-pill"
+                type="button"
+                onClick={() => setIsPinModalOpen(true)}
+                title="Switch floor operator via 4-digit PIN"
+              >
+                Switch Operator (PIN)
+              </button>
+              <button
+                className="action-pill"
+                type="button"
+                onClick={lockScreen}
+                title="Lock terminal screen immediately"
+              >
+                Lock Station
+              </button>
+            </div>
+          </header>
 
-        <div className="owner-session" aria-label="Current session details">
-          <div>
-            <span>Active Staff Operator</span>
-            <strong>{session?.staff?.fullName}</strong>
-          </div>
-          <div>
-            <span>Role Permission</span>
-            <strong className="role-tag">{session?.staff?.role?.toUpperCase()}</strong>
-          </div>
-          <div>
-            <span>Account Email</span>
-            <strong>{session?.user?.email || 'Terminal Staff'}</strong>
-          </div>
-          <div>
-            <span>6-Hour Shift Lifespan</span>
-            <strong style={{ color: 'var(--tomato)' }}>
-              {shiftRemainingFormatted || 'Shift In Progress'}
-            </strong>
-          </div>
-        </div>
-
-        {/* Quick PIN configuration box */}
-        <div className="pin-settings-box">
-          <h3>Set / Change Your Quick Switch PIN</h3>
-          <p className="login-intro">
-            Set a 4 to 6 digit numeric code for 1-tap shift switching on this terminal.
+          <h1>Welcome, {session?.staff?.fullName}.</h1>
+          <p className="owner-subtitle">
+            Station authenticated. All transactions, kitchen tickets, and analytics modules
+            are synchronized. Operators may switch shifts rapidly with their 4-digit PIN.
           </p>
-          <form className="pin-inline-form" onSubmit={handleSetPin}>
-            <input
-              type="password"
-              inputMode="numeric"
-              maxLength={4}
-              placeholder="e.g. 1234"
-              value={newPin}
-              onChange={(e) => setNewPin(e.target.value.replace(/\D/g, ''))}
-              required
-            />
-            <button
-              type="submit"
-              className="primary-button pin-save-btn"
-              disabled={isUpdatingPin || newPin.length < 4}
-            >
-              {isUpdatingPin ? 'Saving…' : 'Save PIN'}
-            </button>
-          </form>
-          {pinFeedback && <p className="pin-feedback">{pinFeedback}</p>}
-        </div>
 
-        <div className="owner-actions">
-          <button className="quiet-button" type="button" onClick={logout}>
-            Sign out of terminal
-          </button>
-        </div>
-      </section>
+          {/* Luxury Monochromatic Session Grid */}
+          <div className="owner-session" aria-label="Current terminal session metrics">
+            <div>
+              <span>Active Operator</span>
+              <strong>{session?.staff?.fullName}</strong>
+            </div>
+            <div>
+              <span>Floor Role</span>
+              <div>
+                <span className="role-badge">{session?.staff?.role}</span>
+              </div>
+            </div>
+            <div>
+              <span>Account Identity</span>
+              <strong style={{ fontSize: '1.05rem', wordBreak: 'break-all' }}>
+                {session?.user?.email || 'Floor Terminal'}
+              </strong>
+            </div>
+            <div>
+              <span>Shift Lifespan</span>
+              <strong style={{ color: 'var(--black)', fontStyle: 'italic' }}>
+                {shiftRemainingFormatted || 'Shift In Progress'}
+              </strong>
+            </div>
+          </div>
+
+          {/* Quick PIN Passcode Configuration */}
+          <div className="pin-settings-box">
+            <span className="editorial-eyebrow">Station Security</span>
+            <h3>Quick-Switch Passcode</h3>
+            <p className="login-intro" style={{ margin: '0.4rem 0 1rem' }}>
+              Assign a personal 4-digit numeric PIN to transition between POS, KDS, and management views.
+            </p>
+            <form className="pin-inline-form" onSubmit={handleSetPin}>
+              <input
+                type="password"
+                inputMode="numeric"
+                maxLength={4}
+                placeholder="••••"
+                value={newPin}
+                onChange={(e) => setNewPin(e.target.value.replace(/\D/g, ''))}
+                required
+              />
+              <button
+                type="submit"
+                className="primary-button pin-save-btn"
+                disabled={isUpdatingPin || newPin.length !== 4}
+              >
+                {isUpdatingPin ? 'Saving…' : 'Save PIN'}
+              </button>
+            </form>
+            {pinFeedback && <p className="pin-feedback">{pinFeedback}</p>}
+          </div>
+
+          <footer className="owner-actions">
+            <button className="quiet-button" type="button" onClick={logout}>
+              Sign out of station shift &rarr;
+            </button>
+          </footer>
+        </section>
+      </div>
 
       {/* PIN Shift Switch Modal */}
       <PinPadModal

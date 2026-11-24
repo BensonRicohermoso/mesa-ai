@@ -26,57 +26,72 @@ export function LoginPage({ onOpenOwner }) {
 
   return (
     <main className="auth-shell">
-      <section className="auth-story" aria-label="MESA AI staff access">
-        <div className="brand">
-          MESA<span className="brand-mark">/</span>AI
+      <section className="auth-story" aria-label="MESA AI station access">
+        <div className="story-header">
+          <div className="brand">
+            MESA <span className="brand-script">atelier</span>
+          </div>
         </div>
+
         <div className="story-copy">
-          <h1>Good service starts behind the counter.</h1>
+          <span className="editorial-quote">service as an art form</span>
+          <h1>
+            Refined operations, <em>effortless</em> hospitality.
+          </h1>
           <p>
-            Sign in to manage your floor, kitchen, and business decisions in one place.
+            An understated operational suite engineered for contemporary dining rooms.
+            Floor management, kitchen routing, and intelligence unified in pure monochrome.
           </p>
         </div>
+
         <div className="shift-note">
           <span className="status-dot" aria-hidden="true" />
-          Staff workspace is ready
+          <span>Station Terminal Ready &bull; 6-Hr Shift Mode</span>
         </div>
       </section>
+
       <section className="auth-panel">
         <div className="login-card">
-          <h2>Welcome back.</h2>
+          <span className="editorial-eyebrow">Terminal Access</span>
+          <h2>Staff Sign-In</h2>
           <p className="login-intro">
-            Use the staff email and password assigned by your administrator.
+            Provide your floor credentials to authenticate this terminal and initialize your shift.
           </p>
+
           {session && !isVerifying ? (
             <button
               className="primary-button"
               type="button"
+              style={{ width: '100%' }}
               onClick={onOpenOwner}
             >
-              Continue as {session.staff.fullName}
+              Resume As {session.staff.fullName} &rarr;
             </button>
           ) : (
             <form className="login-form" onSubmit={handleSubmit}>
               <label className="field" htmlFor="email">
-                Email address
+                <span>Staff Account Email</span>
                 <input
                   autoComplete="email"
                   id="email"
                   name="email"
                   onChange={(event) => setEmail(event.target.value)}
+                  placeholder="e.g. admin@gmail.com"
                   required
                   type="email"
                   value={email}
                 />
               </label>
+
               <label className="field" htmlFor="password">
-                Password
+                <span>Master Password</span>
                 <input
                   autoComplete="current-password"
                   id="password"
                   minLength="1"
                   name="password"
                   onChange={(event) => setPassword(event.target.value)}
+                  placeholder="••••••••"
                   required
                   type="password"
                   value={password}
@@ -93,7 +108,7 @@ export function LoginPage({ onOpenOwner }) {
                   onChange={(e) => setRemember(e.target.checked)}
                 />
                 <span>
-                  <strong>Remember this terminal</strong> (Keep shift active across restarts)
+                  <strong>Remember this station</strong> (Keeps shift active across tab restarts)
                 </span>
               </label>
 
@@ -102,17 +117,20 @@ export function LoginPage({ onOpenOwner }) {
                   {error}
                 </p>
               ) : null}
+
               <button
                 className="primary-button"
                 disabled={isSubmitting}
                 type="submit"
               >
-                {isSubmitting ? 'Signing in…' : 'Sign in to workspace'}
+                {isSubmitting ? 'Authenticating…' : 'Enter Station Shift'}
               </button>
             </form>
           )}
+
           <p className="login-footer">
-            Contact your administrator if you need an account or cannot access your role.
+            Dedicated POS and KDS stations require master credentials once every 6 hours.
+            Subsequent access is authenticated via rapid numeric PIN.
           </p>
         </div>
       </section>
