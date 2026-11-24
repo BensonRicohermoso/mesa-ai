@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import PropTypes from 'prop-types'
 
+const SAFE_URL_RE = /^(https?:\/\/|\/)/i
+
 export function MenuItemModal({ isOpen, onClose, onSave, item, categories }) {
   const [form, setForm] = useState({
     name: '',
@@ -29,9 +31,10 @@ export function MenuItemModal({ isOpen, onClose, onSave, item, categories }) {
           isAvailable: item.isAvailable !== false,
         })
       } else {
+        const firstActive = (categories || []).find((c) => c.isActive)
         setForm({
           name: '',
-          categoryId: categories?.[0]?.id || '',
+          categoryId: firstActive?.id || categories?.[0]?.id || '',
           description: '',
           imageUrl: '',
           price: '',
@@ -43,6 +46,15 @@ export function MenuItemModal({ isOpen, onClose, onSave, item, categories }) {
       setSaving(false)
     }
   }, [isOpen, item, categories])
+
+  useEffect(() => {
+    if (!isOpen) return undefined
+    function handleKeyDown(e) {
+      if (e.key === 'Escape' && !saving) onClose()
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isOpen, saving, onClose])
 
   if (!isOpen) return null
 
@@ -60,6 +72,11 @@ export function MenuItemModal({ isOpen, onClose, onSave, item, categories }) {
     }
     if (!form.categoryId) {
       setError('Please select a category.')
+      return
+    }
+    const trimmedUrl = form.imageUrl.trim()
+    if (trimmedUrl && !SAFE_URL_RE.test(trimmedUrl)) {
+      setError('Image URL must start with http://, https://, or /.')
       return
     }
     const price = Number(form.price)
@@ -80,7 +97,7 @@ export function MenuItemModal({ isOpen, onClose, onSave, item, categories }) {
         name: trimmedName,
         categoryId: form.categoryId,
         description: form.description.trim() || null,
-        imageUrl: form.imageUrl.trim() || null,
+        imageUrl: trimmedUrl || null,
         price,
         costPrice,
         isAvailable: form.isAvailable,
@@ -94,7 +111,7 @@ export function MenuItemModal({ isOpen, onClose, onSave, item, categories }) {
   }
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay" onClick={() => !saving && onClose()}>
       <div className="modal-dialog modal-dialog--wide" onClick={(e) => e.stopPropagation()}>
         <span className="editorial-eyebrow">Menu Item Configuration</span>
         <h2 className="modal-title">{isEditing ? 'Edit Menu Item' : 'New Menu Item'}</h2>
@@ -124,7 +141,7 @@ export function MenuItemModal({ isOpen, onClose, onSave, item, categories }) {
                 <option value="">Select category…</option>
                 {(categories || []).map((cat) => (
                   <option key={cat.id} value={cat.id}>
-                    {cat.name}
+                    {cat.name}{!cat.isActive ? ' (Archived)' : ''}
                   </option>
                 ))}
               </select>

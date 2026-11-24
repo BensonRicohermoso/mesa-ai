@@ -3,6 +3,23 @@ import { createAuthError } from "../../lib/errors.js";
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+const SAFE_URL_RE = /^(https?:\/\/|\/)/i;
+
+/**
+ * Validate that a route parameter is a valid UUID.
+ */
+export function validateUuidParam(value, fieldName = "id") {
+  const id = typeof value === "string" ? value.trim() : "";
+  if (!id || !UUID_RE.test(id)) {
+    throw createAuthError(
+      400,
+      "VALIDATION_ERROR",
+      `${fieldName} must be a valid UUID.`
+    );
+  }
+  return id;
+}
+
 /**
  * Validate a category creation or update payload.
  */
@@ -68,12 +85,18 @@ export function validateMenuItem(body) {
   }
 
   const description =
-    typeof body?.description === "string" ? body.description.trim() : null;
+    typeof body?.description === "string" ? body.description.trim() || null : null;
 
-  const imageUrl =
-    typeof body?.imageUrl === "string" && body.imageUrl.trim()
-      ? body.imageUrl.trim()
-      : null;
+  const rawImageUrl =
+    typeof body?.imageUrl === "string" ? body.imageUrl.trim() : "";
+  if (rawImageUrl && !SAFE_URL_RE.test(rawImageUrl)) {
+    throw createAuthError(
+      400,
+      "VALIDATION_ERROR",
+      "imageUrl must start with http://, https://, or /."
+    );
+  }
+  const imageUrl = rawImageUrl || null;
 
   const price = Number(body?.price);
   if (Number.isNaN(price) || price < 0) {

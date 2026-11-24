@@ -1,9 +1,8 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import {
   getCategories,
   createCategory,
-  updateCategory,
-  setCategoryStatus,
+  deleteCategory,
   getMenuItems,
   createMenuItem,
   updateMenuItem,
@@ -19,6 +18,7 @@ export function MenuManagement() {
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [feedback, setFeedback] = useState('')
 
   // Filters
   const [selectedCategoryId, setSelectedCategoryId] = useState(null)
@@ -27,9 +27,15 @@ export function MenuManagement() {
 
   // Modals
   const [catModalOpen, setCatModalOpen] = useState(false)
-  const [editingCategory, setEditingCategory] = useState(null)
   const [itemModalOpen, setItemModalOpen] = useState(false)
   const [editingItem, setEditingItem] = useState(null)
+
+  function showNotice(msg) {
+    setFeedback(msg)
+    setTimeout(() => {
+      setFeedback((prev) => (prev === msg ? '' : prev))
+    }, 3500)
+  }
 
   // ── Data Loading ───────────────────────────────────────────────────────────
   const loadData = useCallback(async () => {
@@ -52,56 +58,55 @@ export function MenuManagement() {
     loadData()
   }, [loadData])
 
-  // ── Filtering ──────────────────────────────────────────────────────────────
-  const activeCategories = categories.filter((c) => c.isActive)
+  // ── Filtering & Dynamic Counts ─────────────────────────────────────────────
+  const segmentItems = useMemo(
+    () => items.filter((item) => (showArchived ? !item.isActive : item.isActive)),
+    [items, showArchived]
+  )
 
-  const filteredItems = items.filter((item) => {
-    // Active / Archived filter
-    if (showArchived) {
-      if (item.isActive) return false
-    } else {
-      if (!item.isActive) return false
+  const categoryCounts = useMemo(() => {
+    const counts = new Map()
+    for (const item of segmentItems) {
+      counts.set(item.categoryId, (counts.get(item.categoryId) || 0) + 1)
     }
-    // Category filter
-    if (selectedCategoryId && item.categoryId !== selectedCategoryId) return false
-    // Search
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase()
+    return counts
+  }, [segmentItems])
+
+  const filteredItems = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase()
+    return segmentItems.filter((item) => {
+      if (selectedCategoryId && item.categoryId !== selectedCategoryId) return false
       if (
+        q &&
         !item.name.toLowerCase().includes(q) &&
         !(item.description || '').toLowerCase().includes(q)
-      )
+      ) {
         return false
-    }
-    return true
-  })
+      }
+      return true
+    })
+  }, [segmentItems, selectedCategoryId, searchQuery])
 
   // ── Category Handlers ──────────────────────────────────────────────────────
-  function openNewCategory() {
-    setEditingCategory(null)
-    setCatModalOpen(true)
+  async function handleCreateCategory(data) {
+    const created = await createCategory(data)
+    setCategories((prev) =>
+      [...prev, created].sort((a, b) => a.sortOrder - b.sortOrder)
+    )
+    showNotice(`Category "${created.name}" created.`)
   }
 
-  function openEditCategory(cat) {
-    setEditingCategory(cat)
-    setCatModalOpen(true)
-  }
-
-  async function handleSaveCategory(data) {
-    if (editingCategory) {
-      await updateCategory(editingCategory.id, data)
-    } else {
-      await createCategory(data)
-    }
-    await loadData()
-  }
-
-  async function handleToggleCategoryStatus(cat) {
+  async function handleRemoveCategory(cat) {
     try {
-      await setCategoryStatus(cat.id, !cat.isActive)
-      await loadData()
+      setError('')
+      await deleteCategory(cat.id)
+      setCategories((prev) => prev.filter((c) => c.id !== cat.id))
+      if (selectedCategoryId === cat.id) {
+        setSelectedCategoryId(null)
+      }
+      showNotice(`Category "${cat.name}" removed.`)
     } catch (err) {
-      setError(err.message)
+      setError(err.message || 'Failed to remove category.')
     }
   }
 
@@ -118,17 +123,26 @@ export function MenuManagement() {
 
   async function handleSaveItem(data) {
     if (editingItem) {
-      await updateMenuItem(editingItem.id, data)
+      const updated = await updateMenuItem(editingItem.id, data)
+      setItems((prev) => prev.map((i) => (i.id === updated.id ? updated : i)))
+      showNotice(`"${updated.name}" updated.`)
     } else {
-      await createMenuItem(data)
+      const created = await createMenuItem(data)
+      setItems((prev) =>
+        [...prev, created].sort((a, b) => a.name.localeCompare(b.name))
+      )
+      showNotice(`"${created.name}" added to menu.`)
     }
-    await loadData()
   }
 
   async function handleToggleAvailability(item) {
     try {
-      await setItemAvailability(item.id, !item.isAvailable)
-      await loadData()
+      setError('')
+      const updated = await setItemAvailability(item.id, !item.isAvailable)
+      setItems((prev) => prev.map((i) => (i.id === updated.id ? updated : i)))
+      showNotice(
+        `"${updated.name}" marked ${updated.isAvailable ? 'In Stock' : 'Sold Out'}.`
+      )
     } catch (err) {
       setError(err.message)
     }
@@ -136,8 +150,12 @@ export function MenuManagement() {
 
   async function handleToggleItemStatus(item) {
     try {
-      await setItemActiveStatus(item.id, !item.isActive)
-      await loadData()
+      setError('')
+      const updated = await setItemActiveStatus(item.id, !item.isActive)
+      setItems((prev) => prev.map((i) => (i.id === updated.id ? updated : i)))
+      showNotice(
+        `"${updated.name}" ${updated.isActive ? 'restored to menu' : 'archived'}.`
+      )
     } catch (err) {
       setError(err.message)
     }
@@ -155,13 +173,18 @@ export function MenuManagement() {
   return (
     <div className="menu-mgmt">
       {error && <p className="mgmt-error">{error}</p>}
+      {feedback && <p className="mgmt-feedback">{feedback}</p>}
 
       <div className="menu-mgmt-layout">
         {/* ── Left: Categories Panel ─────────────────────────────────── */}
         <aside className="menu-categories-panel">
           <div className="panel-header">
             <span className="editorial-eyebrow">Categories</span>
-            <button className="action-pill action-pill--small" onClick={openNewCategory}>
+            <button
+              type="button"
+              className="action-pill action-pill--small"
+              onClick={() => setCatModalOpen(true)}
+            >
               + New
             </button>
           </div>
@@ -169,35 +192,33 @@ export function MenuManagement() {
           <ul className="category-list">
             <li>
               <button
+                type="button"
                 className={`category-item ${!selectedCategoryId ? 'category-item--active' : ''}`}
                 onClick={() => setSelectedCategoryId(null)}
               >
-                All Items ({items.filter((i) => (showArchived ? !i.isActive : i.isActive)).length})
+                <span>All Items</span>
+                <span className="category-count">{segmentItems.length}</span>
               </button>
             </li>
             {categories.map((cat) => (
-              <li key={cat.id}>
+              <li key={cat.id} className="category-row">
                 <button
-                  className={`category-item ${selectedCategoryId === cat.id ? 'category-item--active' : ''} ${!cat.isActive ? 'category-item--inactive' : ''}`}
+                  type="button"
+                  className={`category-item ${selectedCategoryId === cat.id ? 'category-item--active' : ''}`}
                   onClick={() => setSelectedCategoryId(cat.id)}
                 >
-                  <span>
-                    {cat.name}
-                    {!cat.isActive && <em className="inactive-label"> (Archived)</em>}
-                  </span>
-                  <span className="category-count">{cat.itemCount}</span>
+                  <span>{cat.name}</span>
+                  <span className="category-count">{categoryCounts.get(cat.id) || 0}</span>
                 </button>
-                <div className="category-actions">
-                  <button className="quiet-link" onClick={() => openEditCategory(cat)}>
-                    Edit
-                  </button>
-                  <button
-                    className="quiet-link"
-                    onClick={() => handleToggleCategoryStatus(cat)}
-                  >
-                    {cat.isActive ? 'Archive' : 'Restore'}
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  className="category-remove-btn"
+                  onClick={() => handleRemoveCategory(cat)}
+                  title={`Remove ${cat.name}`}
+                  aria-label={`Remove ${cat.name}`}
+                >
+                  ×
+                </button>
               </li>
             ))}
           </ul>
@@ -210,12 +231,14 @@ export function MenuManagement() {
               <span className="editorial-eyebrow">Menu Items</span>
               <div className="segment-toggle">
                 <button
+                  type="button"
                   className={`segment-btn ${!showArchived ? 'segment-btn--active' : ''}`}
                   onClick={() => setShowArchived(false)}
                 >
                   Active ({items.filter((i) => i.isActive).length})
                 </button>
                 <button
+                  type="button"
                   className={`segment-btn ${showArchived ? 'segment-btn--active' : ''}`}
                   onClick={() => setShowArchived(true)}
                 >
@@ -231,7 +254,7 @@ export function MenuManagement() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
-              <button className="action-pill" onClick={openNewItem}>
+              <button type="button" className="action-pill" onClick={openNewItem}>
                 + New Item
               </button>
             </div>
@@ -255,44 +278,65 @@ export function MenuManagement() {
                     ? (((item.price - item.costPrice) / item.price) * 100).toFixed(1)
                     : '0.0'
                 return (
-                  <article key={item.id} className={`item-card ${!item.isActive ? 'item-card--archived' : ''}`}>
-                    <div className="item-card-header">
-                      <h3 className="item-name">{item.name}</h3>
-                      {item.categoryName && (
-                        <span className="item-category-badge">{item.categoryName}</span>
+                  <article
+                    key={item.id}
+                    className={`item-card ${!item.isActive ? 'item-card--archived' : ''}`}
+                  >
+                    <div className="item-card-body">
+                      {item.imageUrl && (
+                        <img
+                          src={item.imageUrl}
+                          alt={item.name}
+                          className="item-thumb"
+                          loading="lazy"
+                        />
                       )}
-                    </div>
+                      <div className="item-card-content">
+                        <div className="item-card-header">
+                          <h3 className="item-name">{item.name}</h3>
+                          {item.categoryName && (
+                            <span className="item-category-badge">{item.categoryName}</span>
+                          )}
+                        </div>
 
-                    {item.description && (
-                      <p className="item-description">{item.description}</p>
-                    )}
+                        {item.description && (
+                          <p className="item-description">{item.description}</p>
+                        )}
 
-                    <div className="item-pricing">
-                      <span>Price: ₱{item.price.toFixed(2)}</span>
-                      <span>Cost: ₱{item.costPrice.toFixed(2)}</span>
-                      <span>Margin: {margin}%</span>
-                    </div>
+                        <div className="item-pricing">
+                          <span>Price: ₱{item.price.toFixed(2)}</span>
+                          <span>Cost: ₱{item.costPrice.toFixed(2)}</span>
+                          <span>Margin: {margin}%</span>
+                        </div>
 
-                    <div className="item-card-footer">
-                      <button
-                        className={`stock-toggle ${item.isAvailable ? 'stock-toggle--in' : 'stock-toggle--out'}`}
-                        onClick={() => handleToggleAvailability(item)}
-                        disabled={!item.isActive}
-                        title={item.isAvailable ? 'Mark as sold out' : 'Mark as in stock'}
-                      >
-                        {item.isAvailable ? '● IN STOCK' : '○ SOLD OUT'}
-                      </button>
+                        <div className="item-card-footer">
+                          <button
+                            type="button"
+                            className={`stock-toggle ${item.isAvailable ? 'stock-toggle--in' : 'stock-toggle--out'}`}
+                            onClick={() => handleToggleAvailability(item)}
+                            disabled={!item.isActive}
+                            title={item.isAvailable ? 'Mark as sold out' : 'Mark as in stock'}
+                          >
+                            {item.isAvailable ? '● IN STOCK' : '○ SOLD OUT'}
+                          </button>
 
-                      <div className="item-actions">
-                        <button className="action-pill action-pill--small" onClick={() => openEditItem(item)}>
-                          Edit
-                        </button>
-                        <button
-                          className="action-pill action-pill--small"
-                          onClick={() => handleToggleItemStatus(item)}
-                        >
-                          {item.isActive ? 'Archive' : 'Restore'}
-                        </button>
+                          <div className="item-actions">
+                            <button
+                              type="button"
+                              className="action-pill action-pill--small"
+                              onClick={() => openEditItem(item)}
+                            >
+                              Edit
+                            </button>
+                            <button
+                              type="button"
+                              className="action-pill action-pill--small"
+                              onClick={() => handleToggleItemStatus(item)}
+                            >
+                              {item.isActive ? 'Archive' : 'Restore'}
+                            </button>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </article>
@@ -307,15 +351,14 @@ export function MenuManagement() {
       <CategoryModal
         isOpen={catModalOpen}
         onClose={() => setCatModalOpen(false)}
-        onSave={handleSaveCategory}
-        category={editingCategory}
+        onSave={handleCreateCategory}
       />
       <MenuItemModal
         isOpen={itemModalOpen}
         onClose={() => setItemModalOpen(false)}
         onSave={handleSaveItem}
         item={editingItem}
-        categories={activeCategories}
+        categories={categories}
       />
     </div>
   )

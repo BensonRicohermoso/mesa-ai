@@ -51,8 +51,8 @@ export function OwnerHome() {
           <header className="owner-header-bar">
             <div>
               <span className="editorial-eyebrow">Executive Atelier &bull; Verified Station</span>
-              <div className="brand" style={{ color: 'var(--black)', fontSize: '0.95rem' }}>
-                MESA <span className="brand-script" style={{ color: 'var(--muted-gray)' }}>administration</span>
+              <div className="brand" style={{ fontSize: '0.95rem' }}>
+                MESA <span className="brand-script">administration</span>
               </div>
             </div>
 
@@ -118,7 +118,7 @@ export function OwnerHome() {
                 </div>
                 <div>
                   <span>Shift Lifespan</span>
-                  <strong style={{ color: 'var(--black)', fontStyle: 'italic' }}>
+                  <strong style={{ fontStyle: 'italic' }}>
                     {shiftRemainingFormatted || 'Shift In Progress'}
                   </strong>
                 </div>

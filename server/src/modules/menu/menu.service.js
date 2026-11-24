@@ -40,10 +40,11 @@ function formatMenuItem(row) {
 // ── Categories ───────────────────────────────────────────────────────────────
 
 export async function getAllCategories() {
-  // Load categories with a count of linked menu items.
+  // Load active categories with a count of linked menu items.
   const { data, error } = await supabase
     .from("menu_categories")
     .select("id,name,sort_order,is_active,created_at,updated_at,menu_items(count)")
+    .eq("is_active", true)
     .order("sort_order", { ascending: true });
 
   if (error) throw error;
@@ -66,6 +67,38 @@ export async function getCategoryById(id) {
 }
 
 export async function createCategory({ name, sortOrder, isActive }) {
+  // Check if a soft-deactivated category with the same name exists so it can be restored.
+  const { data: existing, error: lookupError } = await supabase
+    .from("menu_categories")
+    .select("id,is_active")
+    .eq("name", name)
+    .maybeSingle();
+
+  if (lookupError) throw lookupError;
+
+  if (existing) {
+    if (existing.is_active) {
+      throw createAuthError(
+        409,
+        "CATEGORY_DUPLICATE",
+        `A category named "${name}" already exists.`
+      );
+    }
+
+    const { data: restored, error: restoreError } = await supabase
+      .from("menu_categories")
+      .update({
+        sort_order: sortOrder,
+        is_active: true,
+      })
+      .eq("id", existing.id)
+      .select("id,name,sort_order,is_active,created_at,updated_at")
+      .single();
+
+    if (restoreError) throw restoreError;
+    return formatCategory(restored);
+  }
+
   const { data, error } = await supabase
     .from("menu_categories")
     .insert({
@@ -88,6 +121,48 @@ export async function createCategory({ name, sortOrder, isActive }) {
   }
 
   return formatCategory(data);
+}
+
+export async function deleteCategory(id) {
+  const category = await getCategoryById(id);
+  if (!category) {
+    throw createAuthError(404, "CATEGORY_NOT_FOUND", "Category not found.");
+  }
+
+  const { data: linkedItems, error: itemsError } = await supabase
+    .from("menu_items")
+    .select("id,is_active")
+    .eq("category_id", id);
+
+  if (itemsError) throw itemsError;
+
+  const hasActiveItems = (linkedItems || []).some((item) => item.is_active);
+  if (hasActiveItems) {
+    throw createAuthError(
+      409,
+      "CATEGORY_IN_USE",
+      `Archive or move all active items in "${category.name}" before removing it.`
+    );
+  }
+
+  // If archived items still reference this category, soft-deactivate to preserve order history.
+  if ((linkedItems || []).length > 0) {
+    const { error: softError } = await supabase
+      .from("menu_categories")
+      .update({ is_active: false })
+      .eq("id", id);
+
+    if (softError) throw softError;
+    return { ok: true, id, softDeleted: true };
+  }
+
+  const { error: deleteError } = await supabase
+    .from("menu_categories")
+    .delete()
+    .eq("id", id);
+
+  if (deleteError) throw deleteError;
+  return { ok: true, id, softDeleted: false };
 }
 
 export async function updateCategory(id, { name, sortOrder, isActive }) {

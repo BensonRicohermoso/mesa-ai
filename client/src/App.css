@@ -355,13 +355,27 @@ button {
   padding: clamp(1.5rem, 4vw, 4rem);
 }
 
+.owner-shell {
+  background: var(--pure-black);
+  color: var(--white);
+}
+
 .owner-container {
   width: min(100%, 72rem);
   margin: 0 auto;
-  width: 100%;
+  background: var(--pure-black);
 }
 
-.owner-card, .access-card {
+.owner-card {
+  width: min(100%, 72rem);
+  margin: 0 auto;
+  background: var(--dark-surface);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  padding: clamp(2.5rem, 6vw, 5rem);
+  color: var(--white);
+}
+
+.access-card {
   width: min(100%, 72rem);
   margin: 0 auto;
   background: var(--white);
@@ -375,9 +389,17 @@ button {
   align-items: flex-end;
   padding-bottom: 2rem;
   margin-bottom: 2.5rem;
-  border-bottom: 1px solid var(--light-gray);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
   flex-wrap: wrap;
   gap: 1.5rem;
+}
+
+.owner-header-bar .brand {
+  color: var(--white);
+}
+
+.owner-header-bar .brand-script {
+  color: var(--muted-gray);
 }
 
 .terminal-actions {
@@ -386,7 +408,28 @@ button {
   flex-wrap: wrap;
 }
 
-.owner-card h1, .access-card h1 {
+.owner-shell .action-pill {
+  color: var(--white);
+  border-color: rgba(255, 255, 255, 0.28);
+}
+
+.owner-shell .action-pill:hover {
+  background: var(--white);
+  color: var(--black);
+  border-color: var(--white);
+}
+
+.owner-card h1 {
+  font-family: var(--font-serif);
+  font-size: clamp(3rem, 6.5vw, 5rem);
+  font-weight: 300;
+  letter-spacing: -0.03em;
+  line-height: 1.02;
+  margin: 0 0 1.2rem;
+  color: var(--white);
+}
+
+.access-card h1 {
   font-family: var(--font-serif);
   font-size: clamp(3rem, 6.5vw, 5rem);
   font-weight: 300;
@@ -410,13 +453,13 @@ button {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 1px;
-  background: var(--light-gray);
-  border: 1px solid var(--light-gray);
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   margin: 3rem 0;
 }
 .owner-session div {
   padding: 1.5rem;
-  background: var(--white);
+  background: #0f0f0f;
 }
 .owner-session span {
   display: block;
@@ -433,7 +476,7 @@ button {
   font-family: var(--font-serif);
   font-size: 1.35rem;
   font-weight: 400;
-  color: var(--black);
+  color: var(--white);
   letter-spacing: -0.01em;
 }
 .role-badge {
@@ -444,23 +487,26 @@ button {
   letter-spacing: 0.18em;
   text-transform: uppercase;
   padding: 0.25rem 0.6rem;
-  background: var(--black);
-  color: var(--white) !important;
+  background: var(--white);
+  color: var(--black) !important;
 }
 
 /* PIN Settings Editorial Box */
 .pin-settings-box {
   margin: 3.5rem 0 2.5rem;
   padding: 2.2rem;
-  background: var(--off-white);
-  border: 1px solid var(--light-gray);
+  background: #0f0f0f;
+  border: 1px solid rgba(255, 255, 255, 0.12);
 }
 .pin-settings-box h3 {
   font-family: var(--font-serif);
   font-size: 1.6rem;
   font-weight: 400;
   margin: 0 0 0.5rem;
-  color: var(--black);
+  color: var(--white);
+}
+.pin-settings-box .login-intro {
+  color: var(--muted-gray);
 }
 .pin-inline-form {
   display: flex;
@@ -470,8 +516,9 @@ button {
 }
 .pin-inline-form input {
   padding: 0.8rem 1.2rem;
-  border: 1px solid var(--light-gray);
-  background: var(--white);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: #181818;
+  color: var(--white);
   font-family: var(--font-sans);
   font-size: 1.1rem;
   letter-spacing: 0.4em;
@@ -479,7 +526,23 @@ button {
   width: 100%;
 }
 .pin-inline-form input:focus {
-  border-color: var(--black);
+  border-color: var(--white);
+}
+.owner-shell .primary-button {
+  background: var(--white);
+  color: var(--black);
+  border-color: var(--white);
+}
+.owner-shell .primary-button:hover:not(:disabled) {
+  background: transparent;
+  color: var(--white);
+  border-color: var(--white);
+}
+.owner-shell .quiet-button {
+  color: var(--muted-gray);
+}
+.owner-shell .quiet-button:hover {
+  color: var(--white);
 }
 .pin-save-btn {
   min-height: auto;
@@ -490,7 +553,7 @@ button {
   font-family: var(--font-sans);
   font-size: 0.75rem;
   letter-spacing: 0.05em;
-  color: var(--black);
+  color: var(--white);
   font-weight: 500;
 }
 
@@ -499,7 +562,7 @@ button {
   justify-content: flex-start;
   margin-top: 2rem;
   padding-top: 2rem;
-  border-top: 1px solid var(--light-gray);
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
 }
 
 /* ==========================================================================
@@ -519,18 +582,20 @@ button {
 
 .pin-card {
   width: min(100%, 24rem);
-  background: var(--white);
-  border: 1px solid var(--black);
+  background: var(--dark-surface);
+  color: var(--white);
+  border: 1px solid rgba(255, 255, 255, 0.16);
   padding: 2.5rem 2.2rem;
   display: grid;
   gap: 1.6rem;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.85);
 }
 
 .pin-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  border-bottom: 1px solid var(--light-gray);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
   padding-bottom: 1.2rem;
 }
 .pin-header h2 {
@@ -539,7 +604,13 @@ button {
   font-weight: 300;
   letter-spacing: -0.02em;
   margin: 0.2rem 0 0;
-  color: var(--black);
+  color: var(--white);
+}
+.pin-card .quiet-button {
+  color: var(--muted-gray);
+}
+.pin-card .quiet-button:hover {
+  color: var(--white);
 }
 
 /* Staff Selector Tabs */
@@ -553,20 +624,23 @@ button {
   flex: 1;
   min-width: 5.5rem;
   padding: 0.75rem 0.6rem;
-  border: 1px solid var(--light-gray);
-  background: var(--off-white);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: #141414;
   text-align: center;
   cursor: pointer;
   display: grid;
   gap: 0.3rem;
   transition: all 0.2s ease;
 }
+.staff-chip:hover {
+  border-color: rgba(255, 255, 255, 0.35);
+}
 .staff-chip strong {
   font-family: var(--font-sans);
   font-size: 0.75rem;
   font-weight: 600;
   letter-spacing: 0.05em;
-  color: var(--black);
+  color: #cccccc;
 }
 .staff-chip span {
   font-family: var(--font-sans);
@@ -577,12 +651,12 @@ button {
   color: var(--muted-gray);
 }
 .staff-chip.active {
-  border-color: var(--black);
-  background: var(--black);
+  border-color: var(--white);
+  background: var(--white);
 }
 .staff-chip.active strong,
 .staff-chip.active span {
-  color: var(--white);
+  color: var(--black);
 }
 
 /* Exactly 4 PIN Dots */
@@ -596,12 +670,13 @@ button {
   width: 0.85rem;
   height: 0.85rem;
   border-radius: 50%;
-  border: 1px solid var(--black);
+  border: 1px solid rgba(255, 255, 255, 0.5);
   background: transparent;
   transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .pin-dot.filled {
-  background: var(--black);
+  background: var(--white);
+  border-color: var(--white);
   transform: scale(1.15);
 }
 
@@ -616,21 +691,21 @@ button {
   font-family: var(--font-serif);
   font-size: 1.6rem;
   font-weight: 400;
-  border: 1px solid var(--light-gray);
-  background: var(--white);
-  color: var(--black);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: #141414;
+  color: var(--white);
   display: grid;
   place-items: center;
   transition: all 0.15s ease;
 }
 .keypad-btn:hover {
-  border-color: var(--black);
-  background: var(--off-white);
+  border-color: var(--white);
+  background: #1f1f1f;
 }
 .keypad-btn:active {
-  background: var(--black);
-  color: var(--white);
-  border-color: var(--black);
+  background: var(--white);
+  color: var(--black);
+  border-color: var(--white);
 }
 .keypad-btn.action-btn {
   font-family: var(--font-sans);
@@ -638,6 +713,17 @@ button {
   font-weight: 600;
   letter-spacing: 0.15em;
   color: var(--muted-gray);
+}
+
+.pin-card .primary-button {
+  background: var(--white);
+  color: var(--black);
+  border-color: var(--white);
+}
+.pin-card .primary-button:hover:not(:disabled) {
+  background: transparent;
+  color: var(--white);
+  border-color: var(--white);
 }
 
 .pin-submit-btn {

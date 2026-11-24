@@ -3,6 +3,7 @@ import {
   createCategory,
   updateCategory,
   setCategoryStatus,
+  deleteCategory,
   getAllMenuItems,
   createMenuItem,
   updateMenuItem,
@@ -10,6 +11,7 @@ import {
   setItemActiveStatus,
 } from "./menu.service.js";
 import {
+  validateUuidParam,
   validateCategory,
   validateMenuItem,
   validateAvailabilityToggle,
@@ -39,8 +41,9 @@ export async function postCategory(req, res, next) {
 
 export async function putCategory(req, res, next) {
   try {
+    const id = validateUuidParam(req.params.id, "categoryId");
     const validated = validateCategory(req.body);
-    const category = await updateCategory(req.params.id, validated);
+    const category = await updateCategory(id, validated);
     res.json(category);
   } catch (error) {
     next(error);
@@ -49,9 +52,20 @@ export async function putCategory(req, res, next) {
 
 export async function patchCategoryStatus(req, res, next) {
   try {
+    const id = validateUuidParam(req.params.id, "categoryId");
     const { isActive } = validateCategoryStatusToggle(req.body);
-    const category = await setCategoryStatus(req.params.id, isActive);
+    const category = await setCategoryStatus(id, isActive);
     res.json(category);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function removeCategory(req, res, next) {
+  try {
+    const id = validateUuidParam(req.params.id, "categoryId");
+    const result = await deleteCategory(id);
+    res.json(result);
   } catch (error) {
     next(error);
   }
@@ -61,7 +75,9 @@ export async function patchCategoryStatus(req, res, next) {
 
 export async function getMenuItems(req, res, next) {
   try {
-    const categoryId = req.query.categoryId || undefined;
+    const categoryId = req.query.categoryId
+      ? validateUuidParam(req.query.categoryId, "categoryId")
+      : undefined;
     const includeInactive = req.query.includeInactive !== "false";
     const items = await getAllMenuItems({ categoryId, includeInactive });
     res.json({ items });
@@ -82,8 +98,9 @@ export async function postMenuItem(req, res, next) {
 
 export async function putMenuItem(req, res, next) {
   try {
+    const id = validateUuidParam(req.params.id, "itemId");
     const validated = validateMenuItem(req.body);
-    const item = await updateMenuItem(req.params.id, validated);
+    const item = await updateMenuItem(id, validated);
     res.json(item);
   } catch (error) {
     next(error);
@@ -92,8 +109,9 @@ export async function putMenuItem(req, res, next) {
 
 export async function patchAvailability(req, res, next) {
   try {
+    const id = validateUuidParam(req.params.id, "itemId");
     const { isAvailable } = validateAvailabilityToggle(req.body);
-    const item = await setItemAvailability(req.params.id, isAvailable);
+    const item = await setItemAvailability(id, isAvailable);
     res.json(item);
   } catch (error) {
     next(error);
@@ -102,8 +120,9 @@ export async function patchAvailability(req, res, next) {
 
 export async function patchStatus(req, res, next) {
   try {
+    const id = validateUuidParam(req.params.id, "itemId");
     const { isActive } = validateItemStatusToggle(req.body);
-    const item = await setItemActiveStatus(req.params.id, isActive);
+    const item = await setItemActiveStatus(id, isActive);
     res.json(item);
   } catch (error) {
     next(error);

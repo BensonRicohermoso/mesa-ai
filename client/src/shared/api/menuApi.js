@@ -1,6 +1,20 @@
-import { createApiClient } from './apiClient.js'
+import { loadStoredSession, request as authRequest } from '../../features/auth/authClient.js'
 
-const request = createApiClient('/api/menu')
+function request(path, options = {}) {
+  const session = loadStoredSession()
+  const authHeader = session?.accessToken
+    ? { Authorization: `Bearer ${session.accessToken}` }
+    : {}
+
+  return authRequest(`/menu${path}`, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...authHeader,
+      ...options.headers,
+    },
+  })
+}
 
 // ── Categories ───────────────────────────────────────────────────────────────
 
@@ -26,6 +40,12 @@ export function setCategoryStatus(id, isActive) {
   return request(`/categories/${id}/status`, {
     method: 'PATCH',
     body: JSON.stringify({ isActive }),
+  })
+}
+
+export function deleteCategory(id) {
+  return request(`/categories/${id}`, {
+    method: 'DELETE',
   })
 }
 
