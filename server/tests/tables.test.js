@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { supabase } from "../src/config/supabase.js";
 
-const API_URL = "http://localhost:5000/api";
+const API_URL = process.env.API_URL || "http://localhost:5000/api";
 
 async function runTests() {
   console.log("=== STARTING TABLE MANAGEMENT API TESTS ===\n");
