@@ -5,20 +5,24 @@
 
 /* ── Tab Navigation & Shell Width ───────────────────────────────────────── */
 
+.owner-shell {
+  padding: clamp(1.25rem, 3vw, 2.75rem);
+}
+
 .owner-container,
 .owner-card {
-  width: min(100%, 84rem);
+  width: min(100%, 96rem);
 }
 
 .owner-card {
-  padding: clamp(2rem, 4.5vw, 4rem);
+  padding: clamp(2rem, 4vw, 3.75rem);
 }
 
 .owner-tabs {
   display: flex;
-  gap: 0;
+  gap: 0.35rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.12);
-  margin-bottom: 2rem;
+  margin-bottom: 2.5rem;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: thin;
@@ -41,7 +45,7 @@
   background: none;
   border: none;
   border-bottom: 2px solid transparent;
-  padding: 0.9rem 1.35rem;
+  padding: 1rem 1.6rem;
   font-family: var(--font-sans);
   font-size: 0.78rem;
   font-weight: 600;
@@ -1070,10 +1074,10 @@ select.form-input option {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
+  gap: 1.25rem;
   flex-wrap: wrap;
-  margin-top: 2.25rem;
-  padding-top: 1rem;
+  margin-top: 3rem;
+  padding-top: 1.5rem;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
@@ -1093,22 +1097,22 @@ select.form-input option {
 /* ── Analytics Toolbar ─────────────────────────────────────────────────── */
 
 .analytics-toolbar {
-  margin-bottom: 1.75rem;
+  margin-bottom: 2.5rem;
   display: flex;
   flex-direction: column;
-  gap: 0.9rem;
+  gap: 1.15rem;
 }
 
 .analytics-toolbar .segment-btn,
 .analytics-sub-tabs .segment-btn,
 .dashboard-chart-section .segment-btn {
-  padding: 0.5rem 1.1rem;
+  padding: 0.6rem 1.25rem;
   font-size: 0.74rem;
 }
 
 .analytics-toolbar .action-pill--small,
 .pagination-controls .action-pill--small {
-  padding: 0.45rem 0.95rem;
+  padding: 0.55rem 1.15rem;
   font-size: 0.72rem;
 }
 
@@ -1116,19 +1120,19 @@ select.form-input option {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
+  gap: 1.25rem;
   flex-wrap: wrap;
 }
 
 .analytics-toolbar-actions {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 1rem;
 }
 
 .analytics-toolbar-filters {
   display: flex;
-  gap: 0.75rem;
+  gap: 1rem;
   flex-wrap: wrap;
 }
 
@@ -1219,7 +1223,7 @@ select.form-input option {
   gap: 1px;
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.12);
-  margin-bottom: 1.75rem;
+  margin-bottom: 2.5rem;
 }
 
 .kpi-grid--compact {
@@ -1228,10 +1232,10 @@ select.form-input option {
 
 .kpi-cell {
   background: #0a0a0a;
-  padding: 1.35rem 1.5rem;
+  padding: 1.65rem 1.85rem;
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: 0.5rem;
 }
 
 .kpi-label {
@@ -1283,8 +1287,8 @@ select.form-input option {
 .dashboard-charts-grid {
   display: grid;
   grid-template-columns: 1.35fr 1fr;
-  gap: 1.5rem;
-  margin-bottom: 1.75rem;
+  gap: 2rem;
+  margin-bottom: 2.5rem;
 }
 
 .dashboard-chart-section {
@@ -1296,7 +1300,7 @@ select.form-input option {
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  margin-bottom: 0.85rem;
+  margin-bottom: 1.1rem;
   flex-wrap: wrap;
 }
 
@@ -1307,7 +1311,7 @@ select.form-input option {
   letter-spacing: 0.2em;
   text-transform: uppercase;
   color: var(--muted-gray);
-  margin: 0 0 0.85rem;
+  margin: 0 0 1.1rem;
 }
 
 .dashboard-section-header .dashboard-section-title {
@@ -1320,7 +1324,7 @@ select.form-input option {
   min-width: 0;
   border: 1px solid rgba(255, 255, 255, 0.1);
   background: #0a0a0a;
-  padding: 0.85rem 0.65rem 0.65rem;
+  padding: 1.15rem 1rem 0.9rem;
 }
 
 .chart-tooltip {
@@ -1350,8 +1354,8 @@ select.form-input option {
 .dashboard-bottom-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 1.5rem;
-  margin-bottom: 1.75rem;
+  gap: 2rem;
+  margin-bottom: 2.5rem;
 }
 
 .dashboard-bottom-section {
@@ -1362,13 +1366,13 @@ select.form-input option {
 .analytics-reports .editorial-table th {
   font-size: 0.72rem;
   letter-spacing: 0.16em;
-  padding: 0.95rem 1.1rem;
+  padding: 1.05rem 1.25rem;
 }
 
 .owner-dashboard .editorial-table td,
 .analytics-reports .editorial-table td {
   font-size: 0.92rem;
-  padding: 1rem 1.1rem;
+  padding: 1.15rem 1.25rem;
 }
 
 .top-item-name {
@@ -1450,7 +1454,7 @@ select.form-input option {
 
 .dashboard-cta {
   text-align: center;
-  padding: 1.15rem 0 0.5rem;
+  padding: 1.75rem 0 0.75rem;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
@@ -1458,18 +1462,19 @@ select.form-input option {
 
 .dashboard-error-state,
 .dashboard-empty-state {
-  padding: 2.25rem 0;
+  padding: 3.5rem 1rem;
   text-align: center;
 }
 
 .dashboard-error-state .mgmt-error {
   font-size: 0.92rem;
-  padding: 0.85rem 1.25rem;
+  padding: 1rem 1.5rem;
+  margin-bottom: 1.5rem;
 }
 
 .dashboard-error-state .owner-subtitle,
 .dashboard-empty-state .owner-subtitle {
-  margin: 0 auto 1.5rem;
+  margin: 0 auto 2rem;
   font-size: 0.95rem;
 }
 
@@ -1477,9 +1482,9 @@ select.form-input option {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.75rem;
+  gap: 1rem;
   flex-wrap: wrap;
-  margin-top: 1rem;
+  margin-top: 1.25rem;
 }
 
 .editorial-row--selected {
@@ -1545,7 +1550,7 @@ select.form-input option {
 .analytics-sub-tabs {
   display: flex;
   gap: 0;
-  margin-bottom: 1.5rem;
+  margin-bottom: 2.25rem;
 }
 
 /* ── Quadrant Filter ───────────────────────────────────────────────────── */
@@ -1553,9 +1558,9 @@ select.form-input option {
 .quadrant-grid {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: 0.75rem;
   align-items: center;
-  margin-bottom: 1.5rem;
+  margin-bottom: 2rem;
 }
 
 .quadrant-pill {
@@ -1603,22 +1608,22 @@ select.form-input option {
 /* ── Reports Layout ────────────────────────────────────────────────────── */
 
 .analytics-reports {
-  margin-top: 0.5rem;
+  margin-top: 0.75rem;
 }
 
 .reports-section {
-  margin-top: 0.5rem;
+  margin-top: 0.75rem;
 }
 
 .reports-subsection {
-  margin-top: 2rem;
+  margin-top: 2.75rem;
 }
 
 .reports-actions {
   display: flex;
-  gap: 0.75rem;
-  margin-top: 1.5rem;
-  padding-top: 1rem;
+  gap: 1rem;
+  margin-top: 2.25rem;
+  padding-top: 1.5rem;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
