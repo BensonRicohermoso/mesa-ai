@@ -2,11 +2,13 @@ import { useState } from 'react'
 import { useAuth } from '../../context/useAuth.js'
 import { PinPadModal } from '../auth/PinPadModal.jsx'
 import { MenuManagement } from './components/MenuManagement.jsx'
+import { TableManagement } from './components/TableManagement.jsx'
 import './owner.css'
 
 const TABS = [
   { key: 'overview', label: '01 · Overview' },
   { key: 'menu', label: '02 · Menu Atelier' },
+  { key: 'tables', label: '03 · Table Suite' },
 ]
 
 export function OwnerHome() {
@@ -157,6 +159,7 @@ export function OwnerHome() {
           )}
 
           {activeTab === 'menu' && <MenuManagement />}
+          {activeTab === 'tables' && <TableManagement />}
         </section>
       </div>
 
