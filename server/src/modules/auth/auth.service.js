@@ -68,6 +68,28 @@ export async function loginStaff({ email, password }) {
   };
 }
 
+// Exchange a refresh token for a new Supabase session.
+export async function refreshStaffSession(refreshToken) {
+  const { data, error } = await supabase.auth.refreshSession({ refresh_token: refreshToken });
+
+  if (error || !data.user || !data.session) {
+    throw createAuthError(401, "REFRESH_FAILED", "Session could not be refreshed. Please sign in again.");
+  }
+
+  const staff = await getActiveStaffProfile(data.user.id);
+
+  return {
+    accessToken: data.session.access_token,
+    refreshToken: data.session.refresh_token,
+    expiresAt: new Date(data.session.expires_at * 1000).toISOString(),
+    user: {
+      id: data.user.id,
+      email: data.user.email ?? null,
+    },
+    staff: formatStaff(staff),
+  };
+}
+
 // Sign out a staff member by revoking their session server-side.
 export async function logoutStaff(accessToken) {
   // Revoke the specific session identified by the token that was presented.

@@ -5,6 +5,7 @@ import {
   getCurrentUser,
   postLogin,
   postLogout,
+  postRefresh,
 } from "./auth.controller.js";
 
 const router = express.Router();
@@ -23,13 +24,16 @@ const loginLimiter = rateLimit({
   },
 });
 
-// POST /api/auth/login  — no auth required; rate-limited
+// POST /api/auth/login   — no auth required; rate-limited
 router.post("/auth/login", loginLimiter, postLogin);
 
-// GET  /api/auth/me     — any authenticated staff member; no role restriction
+// POST /api/auth/refresh — no auth required; silently refreshes an expired session
+router.post("/auth/refresh", postRefresh);
+
+// GET  /api/auth/me      — any authenticated staff member; no role restriction
 router.get("/auth/me", authenticate, getCurrentUser);
 
-// POST /api/auth/logout — authenticated; revokes the current session server-side
+// POST /api/auth/logout  — authenticated; revokes the current session server-side
 router.post("/auth/logout", authenticate, postLogout);
 
 export default router;

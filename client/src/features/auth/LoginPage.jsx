@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { login, storeSession } from './authClient.js'
+import { login } from './authClient.js'
 
 export function LoginPage({ activeSession, isVerifying, onAuthenticated, onOpenOwner }) {
   const [email, setEmail] = useState('')
@@ -12,12 +12,14 @@ export function LoginPage({ activeSession, isVerifying, onAuthenticated, onOpenO
     setError('')
     setIsSubmitting(true)
     try {
+      // Session storage is managed by App via onAuthenticated — don't duplicate it here.
       const session = await login(email, password)
-      storeSession(session)
       onAuthenticated(session)
     } catch (requestError) {
       setError(requestError.message)
-    } finally { setIsSubmitting(false) }
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (

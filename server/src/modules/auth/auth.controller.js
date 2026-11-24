@@ -1,4 +1,4 @@
-import { loginStaff, logoutStaff } from "./auth.service.js";
+import { loginStaff, logoutStaff, refreshStaffSession } from "./auth.service.js";
 import { createAuthError } from "../../lib/errors.js";
 
 // Basic email format validation — catches obvious typos before hitting Supabase.
@@ -34,6 +34,20 @@ export function getCurrentUser(req, res) {
     user: req.auth.user,
     staff: req.auth.staff,
   });
+}
+
+// Exchange a refresh token for a new session without re-entering credentials.
+export async function postRefresh(req, res, next) {
+  try {
+    const refreshToken =
+      typeof req.body?.refreshToken === "string" ? req.body.refreshToken.trim() : "";
+    if (!refreshToken) {
+      throw createAuthError(400, "VALIDATION_ERROR", "refreshToken is required.");
+    }
+    res.json(await refreshStaffSession(refreshToken));
+  } catch (error) {
+    next(error);
+  }
 }
 
 // Revoke the current session server-side and confirm sign-out.
