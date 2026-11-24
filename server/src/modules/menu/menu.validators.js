@@ -1,0 +1,163 @@
+import { createAuthError } from "../../lib/errors.js";
+
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Validate a category creation or update payload.
+ */
+export function validateCategory(body) {
+  const name =
+    typeof body?.name === "string" ? body.name.trim() : "";
+  if (!name || name.length > 100) {
+    throw createAuthError(
+      400,
+      "VALIDATION_ERROR",
+      "name is required and must be at most 100 characters."
+    );
+  }
+
+  const sortOrder =
+    body?.sortOrder !== undefined ? Number(body.sortOrder) : 0;
+  if (!Number.isInteger(sortOrder) || sortOrder < 0) {
+    throw createAuthError(
+      400,
+      "VALIDATION_ERROR",
+      "sortOrder must be a non-negative integer."
+    );
+  }
+
+  const result = { name, sortOrder };
+
+  if (body?.isActive !== undefined) {
+    if (typeof body.isActive !== "boolean") {
+      throw createAuthError(
+        400,
+        "VALIDATION_ERROR",
+        "isActive must be a boolean."
+      );
+    }
+    result.isActive = body.isActive;
+  }
+
+  return result;
+}
+
+/**
+ * Validate a menu item creation or update payload.
+ */
+export function validateMenuItem(body) {
+  const categoryId =
+    typeof body?.categoryId === "string" ? body.categoryId.trim() : "";
+  if (!categoryId || !UUID_RE.test(categoryId)) {
+    throw createAuthError(
+      400,
+      "VALIDATION_ERROR",
+      "categoryId must be a valid UUID."
+    );
+  }
+
+  const name =
+    typeof body?.name === "string" ? body.name.trim() : "";
+  if (!name || name.length > 150) {
+    throw createAuthError(
+      400,
+      "VALIDATION_ERROR",
+      "name is required and must be at most 150 characters."
+    );
+  }
+
+  const description =
+    typeof body?.description === "string" ? body.description.trim() : null;
+
+  const imageUrl =
+    typeof body?.imageUrl === "string" && body.imageUrl.trim()
+      ? body.imageUrl.trim()
+      : null;
+
+  const price = Number(body?.price);
+  if (Number.isNaN(price) || price < 0) {
+    throw createAuthError(
+      400,
+      "VALIDATION_ERROR",
+      "price must be a non-negative number."
+    );
+  }
+
+  const costPrice = Number(body?.costPrice);
+  if (Number.isNaN(costPrice) || costPrice < 0) {
+    throw createAuthError(
+      400,
+      "VALIDATION_ERROR",
+      "costPrice must be a non-negative number."
+    );
+  }
+
+  const result = { categoryId, name, description, imageUrl, price, costPrice };
+
+  if (body?.isAvailable !== undefined) {
+    if (typeof body.isAvailable !== "boolean") {
+      throw createAuthError(
+        400,
+        "VALIDATION_ERROR",
+        "isAvailable must be a boolean."
+      );
+    }
+    result.isAvailable = body.isAvailable;
+  }
+
+  if (body?.isActive !== undefined) {
+    if (typeof body.isActive !== "boolean") {
+      throw createAuthError(
+        400,
+        "VALIDATION_ERROR",
+        "isActive must be a boolean."
+      );
+    }
+    result.isActive = body.isActive;
+  }
+
+  return result;
+}
+
+/**
+ * Validate an availability toggle payload.
+ */
+export function validateAvailabilityToggle(body) {
+  if (typeof body?.isAvailable !== "boolean") {
+    throw createAuthError(
+      400,
+      "VALIDATION_ERROR",
+      "isAvailable must be a boolean."
+    );
+  }
+  return { isAvailable: body.isAvailable };
+}
+
+/**
+ * Validate an item active-status toggle payload.
+ */
+export function validateItemStatusToggle(body) {
+  if (typeof body?.isActive !== "boolean") {
+    throw createAuthError(
+      400,
+      "VALIDATION_ERROR",
+      "isActive must be a boolean."
+    );
+  }
+  return { isActive: body.isActive };
+}
+
+/**
+ * Validate a category active-status toggle payload.
+ */
+export function validateCategoryStatusToggle(body) {
+  if (typeof body?.isActive !== "boolean") {
+    throw createAuthError(
+      400,
+      "VALIDATION_ERROR",
+      "isActive must be a boolean."
+    );
+  }
+  return { isActive: body.isActive };
+}

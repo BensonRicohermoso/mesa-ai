@@ -1,0 +1,215 @@
+import { useState, useEffect } from 'react'
+import PropTypes from 'prop-types'
+
+export function MenuItemModal({ isOpen, onClose, onSave, item, categories }) {
+  const [form, setForm] = useState({
+    name: '',
+    categoryId: '',
+    description: '',
+    imageUrl: '',
+    price: '',
+    costPrice: '',
+    isAvailable: true,
+  })
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+
+  const isEditing = Boolean(item)
+
+  useEffect(() => {
+    if (isOpen) {
+      if (item) {
+        setForm({
+          name: item.name || '',
+          categoryId: item.categoryId || '',
+          description: item.description || '',
+          imageUrl: item.imageUrl || '',
+          price: item.price ?? '',
+          costPrice: item.costPrice ?? '',
+          isAvailable: item.isAvailable !== false,
+        })
+      } else {
+        setForm({
+          name: '',
+          categoryId: categories?.[0]?.id || '',
+          description: '',
+          imageUrl: '',
+          price: '',
+          costPrice: '',
+          isAvailable: true,
+        })
+      }
+      setError('')
+      setSaving(false)
+    }
+  }, [isOpen, item, categories])
+
+  if (!isOpen) return null
+
+  function handleChange(field, value) {
+    setForm((prev) => ({ ...prev, [field]: value }))
+  }
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+
+    const trimmedName = form.name.trim()
+    if (!trimmedName) {
+      setError('Item name is required.')
+      return
+    }
+    if (!form.categoryId) {
+      setError('Please select a category.')
+      return
+    }
+    const price = Number(form.price)
+    const costPrice = Number(form.costPrice)
+    if (Number.isNaN(price) || price < 0) {
+      setError('Price must be a non-negative number.')
+      return
+    }
+    if (Number.isNaN(costPrice) || costPrice < 0) {
+      setError('Cost price must be a non-negative number.')
+      return
+    }
+
+    setSaving(true)
+    setError('')
+    try {
+      await onSave({
+        name: trimmedName,
+        categoryId: form.categoryId,
+        description: form.description.trim() || null,
+        imageUrl: form.imageUrl.trim() || null,
+        price,
+        costPrice,
+        isAvailable: form.isAvailable,
+      })
+      onClose()
+    } catch (err) {
+      setError(err.message || 'Failed to save menu item.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-dialog modal-dialog--wide" onClick={(e) => e.stopPropagation()}>
+        <span className="editorial-eyebrow">Menu Item Configuration</span>
+        <h2 className="modal-title">{isEditing ? 'Edit Menu Item' : 'New Menu Item'}</h2>
+
+        <form onSubmit={handleSubmit}>
+          <div className="form-row">
+            <div className="form-group form-group--flex">
+              <label className="form-label">ITEM NAME</label>
+              <input
+                type="text"
+                className="form-input"
+                value={form.name}
+                onChange={(e) => handleChange('name', e.target.value)}
+                maxLength={150}
+                autoFocus
+                required
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label">CATEGORY</label>
+              <select
+                className="form-input"
+                value={form.categoryId}
+                onChange={(e) => handleChange('categoryId', e.target.value)}
+                required
+              >
+                <option value="">Select category…</option>
+                {(categories || []).map((cat) => (
+                  <option key={cat.id} value={cat.id}>
+                    {cat.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">DESCRIPTION</label>
+            <textarea
+              className="form-input form-textarea"
+              value={form.description}
+              onChange={(e) => handleChange('description', e.target.value)}
+              rows={2}
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">IMAGE URL</label>
+            <input
+              type="text"
+              className="form-input"
+              value={form.imageUrl}
+              onChange={(e) => handleChange('imageUrl', e.target.value)}
+              placeholder="https://..."
+            />
+          </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <label className="form-label">SELLING PRICE (₱)</label>
+              <input
+                type="number"
+                className="form-input"
+                value={form.price}
+                onChange={(e) => handleChange('price', e.target.value)}
+                min={0}
+                step="0.01"
+                required
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label">COST PRICE (₱)</label>
+              <input
+                type="number"
+                className="form-input"
+                value={form.costPrice}
+                onChange={(e) => handleChange('costPrice', e.target.value)}
+                min={0}
+                step="0.01"
+                required
+              />
+            </div>
+          </div>
+
+          <div className="form-group form-group--inline">
+            <label className="form-label">AVAILABILITY</label>
+            <button
+              type="button"
+              className={`stock-toggle ${form.isAvailable ? 'stock-toggle--in' : 'stock-toggle--out'}`}
+              onClick={() => handleChange('isAvailable', !form.isAvailable)}
+            >
+              {form.isAvailable ? '● IN STOCK' : '○ SOLD OUT'}
+            </button>
+          </div>
+
+          {error && <p className="form-error">{error}</p>}
+
+          <div className="modal-actions">
+            <button type="button" className="quiet-button" onClick={onClose} disabled={saving}>
+              Cancel
+            </button>
+            <button type="submit" className="primary-button" disabled={saving}>
+              {saving ? 'Saving…' : isEditing ? 'Update Item' : 'Create Item'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+MenuItemModal.propTypes = {
+  isOpen: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired,
+  onSave: PropTypes.func.isRequired,
+  item: PropTypes.object,
+  categories: PropTypes.array,
+}

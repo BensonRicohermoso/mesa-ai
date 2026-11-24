@@ -1,6 +1,6 @@
 # MESA-AI Progress
 
-**Last updated:** 2026-11-24
+**Last updated:** 2026-11-25
 
 MESA-AI currently has the repository structure, Supabase setup, seven applied database migrations, a development menu-and-table seed, and a fully tested customer ordering API for menu lookup, table lookup, order creation, idempotency, validation failures, and order retrieval. Customer UI and the remaining fulfillment, analytics, management, and deployment work are still ahead.
 
@@ -51,10 +51,10 @@ MESA-AI currently has the repository structure, Supabase setup, seven applied da
 - [x] Verify live sign-in and authorization paths with configured Supabase credentials.
 - [ ] UI finalization (in progress).
 
-### Management pages and APIs — Not started
+### Management pages and APIs — In progress
 
-- [ ] Menu management: category and item CRUD, availability toggles, soft deactivation, and admin UI.
-- [ ] Table management: table CRUD, active state, customer QR URLs, and print-friendly QR output.
+- [x] Menu management: category and item CRUD, availability toggles, soft deactivation, and admin UI.
+- [x] Table management: table CRUD, active state, customer QR URLs, and print-friendly QR output.
 - [ ] Staff management: provision users, assign roles, activate/deactivate accounts, and prevent removal of the last active admin.
 
 ### Owner dashboard and reports — Not started
@@ -74,8 +74,8 @@ MESA-AI currently has the repository structure, Supabase setup, seven applied da
 ### Dev 2 Branch Plan
 
 - [x] `feature/dev2-auth-rbac`
-- [ ] `feature/dev2-menu-management`
-- [ ] `feature/dev2-table-management`
+- [x] `feature/dev2-menu-management`
+- [x] `feature/dev2-table-management`
 - [ ] `feature/dev2-staff-management`
 - [ ] `feature/dev2-owner-dashboard`
 - [ ] `feature/dev2-analytics-reports-ui`
@@ -101,6 +101,12 @@ Customer menu and cart UI at `/t/:tableCode`.
 - Applied the development seed: 4 categories, 13 menu items, and 10 dining tables.
 - Added and tested the customer menu, table lookup, create-order, idempotent repeat, validation, and order lookup API endpoints.
 - Added API, database, seed, and repository progress documentation.
+
+### 2026-11-25
+
+- Implemented and verified Table Management APIs (`/api/tables`) with admin RBAC, alphanumeric code validation, duplicate rejection, and active-state toggling.
+- Built the Owner `03 · Table Suite` UI (`TableManagement`, `TableModal`, `PrintTableQrModal`) with local vector SVG QR generation (`qrcode`) and print-ready table tent cards.
+- Added automated Table Management API tests in `server/tests/tables.test.js`.
 
 ### 2026-11-24
 
