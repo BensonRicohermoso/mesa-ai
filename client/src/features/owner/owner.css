@@ -10,6 +10,9 @@
   gap: 0;
   border-bottom: 1px solid rgba(255, 255, 255, 0.12);
   margin-bottom: 2rem;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
 }
 
 .owner-tab {
@@ -24,6 +27,8 @@
   text-transform: uppercase;
   color: var(--muted-gray);
   cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
   transition: color 0.2s, border-color 0.2s;
 }
 
@@ -914,6 +919,9 @@ select.form-input option {
 
   .print-modal-dialog {
     position: static !important;
+    background: #ffffff !important;
+    box-shadow: none !important;
+    color: var(--black) !important;
     max-width: none !important;
     max-height: none !important;
     overflow: visible !important;
@@ -923,7 +931,8 @@ select.form-input option {
   }
 
   .tent-card-grid--batch {
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    grid-template-columns: repeat(2, 88mm) !important;
+    justify-content: center !important;
     gap: 10mm !important;
   }
 
@@ -935,6 +944,14 @@ select.form-input option {
   .tent-card {
     border: 1px solid #050505 !important;
     box-shadow: none !important;
+    aspect-ratio: 105 / 148;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .tent-card-inner {
+    flex: 1;
+    justify-content: space-between;
   }
 }
 

@@ -360,6 +360,20 @@ button {
   color: var(--white);
 }
 
+.owner-shell button:focus-visible,
+.owner-shell input:focus-visible,
+.owner-shell select:focus-visible,
+.owner-shell textarea:focus-visible,
+.lock-shell button:focus-visible,
+.pin-overlay button:focus-visible,
+.modal-overlay button:focus-visible,
+.modal-overlay input:focus-visible,
+.modal-overlay select:focus-visible,
+.modal-overlay textarea:focus-visible {
+  outline: 1px solid var(--white);
+  outline-offset: 2px;
+}
+
 .owner-container {
   width: min(100%, 72rem);
   margin: 0 auto;

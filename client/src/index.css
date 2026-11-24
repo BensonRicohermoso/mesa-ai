@@ -33,7 +33,10 @@ body {
   overflow-x: hidden;
 }
 
-button:focus-visible, input:focus-visible {
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
   outline: 1px solid var(--black);
   outline-offset: 2px;
 }
