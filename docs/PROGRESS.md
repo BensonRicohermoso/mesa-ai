@@ -2,7 +2,7 @@
 
 **Last updated:** 2026-11-25
 
-MESA-AI currently has the repository structure, Supabase setup, seven applied database migrations, a development menu-and-table seed, and a fully tested customer ordering API for menu lookup, table lookup, order creation, idempotency, validation failures, and order retrieval. Customer UI and the remaining fulfillment, analytics, management, and deployment work are still ahead.
+MESA-AI currently has the repository structure, Supabase setup, seven applied database migrations (plus two pending migrations: `20261124100000_staff_pin.sql` and `20261125100000_fix_drinks_category_and_order_check.sql`), a development menu-and-table seed, and a fully tested customer ordering API for menu lookup, table lookup, order creation, idempotency, validation failures, and order retrieval. Customer UI and the remaining fulfillment, analytics, management, and deployment work are still ahead.
 
 ## Summary
 
@@ -26,7 +26,7 @@ MESA-AI currently has the repository structure, Supabase setup, seven applied da
 
 - [x] Folder structure and repo setup
 - [x] Supabase setup and connection
-- [x] Database migrations (7 applied)
+- [x] Database migrations (7 applied; 2 pending in `supabase/migrations/`: `20261124100000_staff_pin.sql`, `20261125100000_fix_drinks_category_and_order_check.sql`)
 - [x] Dev seed (menu and tables)
 - [x] Order API: POST `/api/orders`, GET menu, GET table, GET order by ref
 - [ ] Customer menu and cart UI
@@ -104,6 +104,9 @@ Customer menu and cart UI at `/t/:tableCode`.
 
 ### 2026-11-25
 
+- Implemented and verified Menu Management APIs (`/api/menu/categories`, `/api/menu/items`) with admin RBAC, category CRUD/status/removal protection (`409 CATEGORY_IN_USE`), item CRUD, availability toggling (`PATCH /api/menu/items/:id/availability`), and soft deactivation/restoration (`PATCH /api/menu/items/:id/status`).
+- Built the Owner `02 · Menu Atelier` UI (`MenuManagement`, `CategoryModal`, `MenuItemModal`) with category filtering, Active/Archived segmented views, search, margin calculation, stock toggles, and category removal confirmation.
+- Added automated Menu Management API tests with live-DB cleanup in `server/tests/menu.test.js`.
 - Implemented and verified Staff Management APIs (`/api/staff`) with admin RBAC, Supabase Auth user provisioning, role/PIN/password updates, active-state toggling, and last active admin deactivation/demotion protection.
 - Built the Owner `04 · Staff Roster` UI (`StaffManagement`, `StaffModal`) with role/status filtering, PIN management, and sole-admin UI safeguards.
 - Added automated Staff Management API tests in `server/tests/staff.test.js`.

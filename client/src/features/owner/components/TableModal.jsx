@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import PropTypes from 'prop-types'
 
 const TABLE_CODE_RE = /^[A-Z0-9]{1,20}$/
@@ -11,6 +11,14 @@ function TableModalForm({ onClose, onSave, table }) {
   const [error, setError] = useState('')
 
   const isEditing = Boolean(table)
+
+  useEffect(() => {
+    function handleKeyDown(e) {
+      if (e.key === 'Escape' && !saving) onClose()
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [saving, onClose])
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -44,10 +52,18 @@ function TableModalForm({ onClose, onSave, table }) {
   }
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-dialog" onClick={(e) => e.stopPropagation()}>
+    <div className="modal-overlay" onClick={() => !saving && onClose()}>
+      <div
+        className="modal-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="table-modal-title"
+        onClick={(e) => e.stopPropagation()}
+      >
         <span className="editorial-eyebrow">Dining Suite Configuration</span>
-        <h2 className="modal-title">{isEditing ? 'Edit Dining Table' : 'New Dining Table'}</h2>
+        <h2 id="table-modal-title" className="modal-title">
+          {isEditing ? 'Edit Dining Table' : 'New Dining Table'}
+        </h2>
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">

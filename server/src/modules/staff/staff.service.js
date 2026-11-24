@@ -1,11 +1,12 @@
 import { supabase } from "../../config/supabase.js";
 import { createAuthError } from "../../lib/errors.js";
+import { assertPinAvailable } from "../auth/auth.service.js";
 
 const STAFF_SELECT =
-  "id,full_name,role,is_active,created_at,updated_at";
+  "id,full_name,role,is_active,pin_code,created_at,updated_at";
 
 function formatStaffRecord(profile, authUser, activeAdminCount) {
-  const hasPin = Boolean(authUser?.user_metadata?.pin_code);
+  const hasPin = Boolean(profile.pin_code || authUser?.user_metadata?.pin_code);
   const isLastActiveAdmin =
     profile.role === "admin" && profile.is_active && activeAdminCount <= 1;
 
@@ -181,10 +182,12 @@ export async function provisionStaff({
   pinCode,
   isActive = true,
 }) {
-  const userMetadata = { full_name: fullName };
-  if (pinCode) {
-    userMetadata.pin_code = pinCode;
+  if (pinCode && isActive) {
+    await assertPinAvailable(pinCode);
   }
+
+  // Never store plaintext PIN in auth user_metadata (which is embedded in JWTs).
+  const userMetadata = { full_name: fullName };
 
   const { data: authData, error: authError } =
     await supabase.auth.admin.createUser({
@@ -218,6 +221,7 @@ export async function provisionStaff({
       full_name: fullName,
       role,
       is_active: isActive,
+      pin_code: pinCode || null,
     })
     .select(STAFF_SELECT)
     .single();
@@ -233,6 +237,10 @@ export async function provisionStaff({
 
 /**
  * Update a staff member's profile, role, active state, PIN, or password.
+ *
+ * To avoid a non-atomic update where Auth rejects the password change but
+ * staff_profiles is already modified, we validate the Auth update FIRST
+ * and only commit the profile change afterwards.
  */
 export async function updateStaff(id, updates) {
   const current = await getStaffProfileById(id);
@@ -243,26 +251,12 @@ export async function updateStaff(id, updates) {
 
   await assertNotLastActiveAdmin(current, nextRole, nextActive);
 
-  const profileUpdates = {};
-  if (updates.fullName !== undefined) profileUpdates.full_name = updates.fullName;
-  if (updates.role !== undefined) profileUpdates.role = updates.role;
-  if (updates.isActive !== undefined) profileUpdates.is_active = updates.isActive;
-
-  let updatedProfile = current;
-  if (Object.keys(profileUpdates).length > 0) {
-    const { data, error } = await supabase
-      .from("staff_profiles")
-      .update(profileUpdates)
-      .eq("id", id)
-      .select(STAFF_SELECT)
-      .single();
-
-    if (error) throw error;
-    updatedProfile = data;
-
-    await verifyActiveAdminInvariant(current, nextRole, nextActive);
+  // Enforce PIN uniqueness if assigning a PIN on an account that will be active
+  if (updates.pinCode && nextActive) {
+    await assertPinAvailable(updates.pinCode, id);
   }
 
+  // ── Step 1: Auth update FIRST (may reject weak password, etc.) ────────────
   const { data: existingAuth, error: fetchAuthError } =
     await supabase.auth.admin.getUserById(id);
   if (fetchAuthError || !existingAuth?.user) {
@@ -274,18 +268,21 @@ export async function updateStaff(id, updates) {
   }
 
   let authUser = existingAuth.user;
+  const hasLegacyMetaPin =
+    authUser.user_metadata && Object.hasOwn(authUser.user_metadata, "pin_code");
   const needsAuthUpdate =
     updates.password !== undefined ||
-    updates.pinCode !== undefined ||
-    updates.fullName !== undefined;
+    updates.fullName !== undefined ||
+    (updates.pinCode !== undefined && hasLegacyMetaPin);
 
   if (needsAuthUpdate) {
     const nextMeta = { ...(authUser.user_metadata || {}) };
     if (updates.fullName !== undefined) {
       nextMeta.full_name = updates.fullName;
     }
-    if (updates.pinCode !== undefined) {
-      nextMeta.pin_code = updates.pinCode;
+    // Strip any legacy plaintext pin_code from JWT user_metadata
+    if (hasLegacyMetaPin) {
+      delete nextMeta.pin_code;
     }
 
     const authPayload = { user_metadata: nextMeta };
@@ -304,6 +301,32 @@ export async function updateStaff(id, updates) {
       );
     }
     authUser = updatedAuth.user;
+  }
+
+  // ── Step 2: Profile update (only after Auth succeeds) ─────────────────────
+  const profileUpdates = {};
+  if (updates.fullName !== undefined) profileUpdates.full_name = updates.fullName;
+  if (updates.role !== undefined) profileUpdates.role = updates.role;
+  if (updates.isActive !== undefined) profileUpdates.is_active = updates.isActive;
+
+  // Sync pin_code to staff_profiles when updating
+  if (updates.pinCode !== undefined) {
+    profileUpdates.pin_code = updates.pinCode;
+  }
+
+  let updatedProfile = current;
+  if (Object.keys(profileUpdates).length > 0) {
+    const { data, error } = await supabase
+      .from("staff_profiles")
+      .update(profileUpdates)
+      .eq("id", id)
+      .select(STAFF_SELECT)
+      .single();
+
+    if (error) throw error;
+    updatedProfile = data;
+
+    await verifyActiveAdminInvariant(current, nextRole, nextActive);
   }
 
   const activeAdminCount = await countActiveAdmins();

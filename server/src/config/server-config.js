@@ -24,7 +24,10 @@ if (missingVariables.length > 0) {
 
 export const env = {
   PORT: process.env.PORT || "5000",
-  CLIENT_URL: process.env.CLIENT_URL || "http://localhost:5173",
+  CLIENT_URL:
+    (process.env.CLIENT_URL || "http://localhost:5173")
+      .trim()
+      .replace(/\/+$/, "") || "http://localhost:5173",
   SUPABASE_URL: process.env.SUPABASE_URL,
   SUPABASE_PUBLISHABLE_KEY:
     process.env.SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_ANON_KEY || "",

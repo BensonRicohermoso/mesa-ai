@@ -76,7 +76,7 @@ export async function getStaffList(_req, res, next) {
   }
 }
 
-// Fast switch active staff on terminal using a 4-6 digit PIN.
+// Fast switch active staff on terminal using a 4-digit PIN.
 export async function postPinSwitch(req, res, next) {
   try {
     const { pin, staffId } = req.body || {};

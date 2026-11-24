@@ -32,6 +32,7 @@ export function AuthProvider({
   // On terminal launch or tab reopen: if a valid 6-hr shift session exists,
   // require staff PIN to unlock (no full email/password re-entry required).
   const [isLocked, setIsLocked] = useState(() => Boolean(loadStoredSession()))
+  const [nowMs, setNowMs] = useState(() => Date.now())
   const idleTimerRef = useRef(null)
 
   const accessToken = session?.accessToken
@@ -88,7 +89,10 @@ export function AuthProvider({
     }
 
     checkShift()
-    const interval = setInterval(checkShift, 20 * 1000)
+    const interval = setInterval(() => {
+      setNowMs(Date.now())
+      checkShift()
+    }, 20 * 1000)
     return () => clearInterval(interval)
   }, [session?.shiftExpiresAt])
 
@@ -146,6 +150,7 @@ export function AuthProvider({
   const login = useCallback(async (email, password, remember = true) => {
     const nextSession = await apiLogin(email, password)
     const stored = storeSession(nextSession, remember)
+    setNowMs(Date.now())
     setSession(stored)
     setIsLocked(false)
     setIsVerifying(false)
@@ -164,12 +169,17 @@ export function AuthProvider({
   }, [session?.accessToken])
 
   // Quick PIN-based Staff Switching (POS Mode)
+  // The backend now returns a fresh accessToken + refreshToken for the target user,
+  // so the Bearer token matches the switched-to user's RBAC role.
   const switchStaff = useCallback(async (pin, staffId = null) => {
     const result = await apiSwitchStaffByPin(pin, staffId)
     setSession((current) => {
       if (!current) return current
       const updated = {
         ...current,
+        accessToken: result.accessToken || current.accessToken,
+        refreshToken: result.refreshToken || current.refreshToken,
+        expiresAt: result.expiresAt || current.expiresAt,
         staff: result.staff,
         user: result.user || current.user,
       }
@@ -195,12 +205,12 @@ export function AuthProvider({
   // Formatted shift time remaining
   const shiftRemainingFormatted = useMemo(() => {
     if (!session?.shiftExpiresAt) return null
-    const diffMs = new Date(session.shiftExpiresAt).getTime() - Date.now()
+    const diffMs = new Date(session.shiftExpiresAt).getTime() - nowMs
     if (diffMs <= 0) return 'Shift Expired'
     const hours = Math.floor(diffMs / (1000 * 60 * 60))
     const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60))
     return `${hours}h ${minutes}m remaining`
-  }, [session?.shiftExpiresAt])
+  }, [session?.shiftExpiresAt, nowMs])
 
   const value = useMemo(
     () => ({

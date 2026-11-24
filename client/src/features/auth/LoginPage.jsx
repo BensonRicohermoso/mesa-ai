@@ -1,6 +1,7 @@
 import PropTypes from 'prop-types'
 import { useState } from 'react'
 import { useAuth } from '../../context/useAuth.js'
+import { PasswordInput } from '../../shared/components/PasswordInput.jsx'
 
 export function LoginPage({ onOpenOwner }) {
   const { session, isVerifying, login } = useAuth()
@@ -85,7 +86,7 @@ export function LoginPage({ onOpenOwner }) {
 
               <label className="field" htmlFor="password">
                 <span>Master Password</span>
-                <input
+                <PasswordInput
                   autoComplete="current-password"
                   id="password"
                   minLength="1"
@@ -93,7 +94,6 @@ export function LoginPage({ onOpenOwner }) {
                   onChange={(event) => setPassword(event.target.value)}
                   placeholder="••••••••"
                   required
-                  type="password"
                   value={password}
                 />
               </label>

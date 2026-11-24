@@ -4,6 +4,7 @@ import { PinPadModal } from '../auth/PinPadModal.jsx'
 import { MenuManagement } from './components/MenuManagement.jsx'
 import { TableManagement } from './components/TableManagement.jsx'
 import { StaffManagement } from './components/StaffManagement.jsx'
+import { PasswordInput } from '../../shared/components/PasswordInput.jsx'
 import './owner.css'
 
 const TABS = [
@@ -132,11 +133,11 @@ export function OwnerHome() {
                   Assign a personal 4-digit numeric PIN to transition between POS, KDS, and management views.
                 </p>
                 <form className="pin-inline-form" onSubmit={handleSetPin}>
-                  <input
-                    type="password"
+                  <PasswordInput
                     inputMode="numeric"
                     maxLength={4}
                     placeholder="••••"
+                    toggleLabel="PIN"
                     value={newPin}
                     onChange={(e) => setNewPin(e.target.value.replace(/\D/g, ''))}
                     required

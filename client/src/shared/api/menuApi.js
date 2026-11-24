@@ -18,8 +18,9 @@ function request(path, options = {}) {
 
 // ── Categories ───────────────────────────────────────────────────────────────
 
-export function getCategories() {
-  return request('/categories')
+export function getCategories({ includeInactive = false } = {}) {
+  const query = includeInactive ? '?includeInactive=true' : ''
+  return request(`/categories${query}`)
 }
 
 export function createCategory(data) {

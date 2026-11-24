@@ -39,14 +39,18 @@ function formatMenuItem(row) {
 
 // ── Categories ───────────────────────────────────────────────────────────────
 
-export async function getAllCategories() {
-  // Load active categories with a count of linked menu items.
-  const { data, error } = await supabase
+export async function getAllCategories({ includeInactive = false } = {}) {
+  // Load categories with a count of linked menu items.
+  let query = supabase
     .from("menu_categories")
     .select("id,name,sort_order,is_active,created_at,updated_at,menu_items(count)")
-    .eq("is_active", true)
     .order("sort_order", { ascending: true });
 
+  if (!includeInactive) {
+    query = query.eq("is_active", true);
+  }
+
+  const { data, error } = await query;
   if (error) throw error;
 
   return (data || []).map((row) => ({
@@ -165,7 +169,34 @@ export async function deleteCategory(id) {
   return { ok: true, id, softDeleted: false };
 }
 
+async function assertNoActiveItemsInCategory(categoryId, categoryName, action) {
+  const { data: activeItems, error } = await supabase
+    .from("menu_items")
+    .select("id")
+    .eq("category_id", categoryId)
+    .eq("is_active", true)
+    .limit(1);
+
+  if (error) throw error;
+
+  if ((activeItems || []).length > 0) {
+    throw createAuthError(
+      409,
+      "CATEGORY_IN_USE",
+      `Archive or move all active items in "${categoryName}" before ${action} it.`
+    );
+  }
+}
+
 export async function updateCategory(id, { name, sortOrder, isActive }) {
+  if (isActive === false) {
+    const existing = await getCategoryById(id);
+    if (!existing) {
+      throw createAuthError(404, "CATEGORY_NOT_FOUND", "Category not found.");
+    }
+    await assertNoActiveItemsInCategory(id, existing.name, "deactivating");
+  }
+
   const updates = {};
   if (name !== undefined) updates.name = name;
   if (sortOrder !== undefined) updates.sort_order = sortOrder;
@@ -196,6 +227,14 @@ export async function updateCategory(id, { name, sortOrder, isActive }) {
 }
 
 export async function setCategoryStatus(id, isActive) {
+  if (!isActive) {
+    const existing = await getCategoryById(id);
+    if (!existing) {
+      throw createAuthError(404, "CATEGORY_NOT_FOUND", "Category not found.");
+    }
+    await assertNoActiveItemsInCategory(id, existing.name, "deactivating");
+  }
+
   const { data, error } = await supabase
     .from("menu_categories")
     .update({ is_active: isActive })

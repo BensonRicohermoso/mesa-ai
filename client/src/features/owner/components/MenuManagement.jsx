@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import {
   getCategories,
   createCategory,
+  setCategoryStatus,
   deleteCategory,
   getMenuItems,
   createMenuItem,
@@ -29,6 +30,8 @@ export function MenuManagement() {
   const [catModalOpen, setCatModalOpen] = useState(false)
   const [itemModalOpen, setItemModalOpen] = useState(false)
   const [editingItem, setEditingItem] = useState(null)
+  const [confirmRemoveCat, setConfirmRemoveCat] = useState(null)
+  const [removingCat, setRemovingCat] = useState(false)
 
   function showNotice(msg) {
     setFeedback(msg)
@@ -38,25 +41,40 @@ export function MenuManagement() {
   }
 
   // ── Data Loading ───────────────────────────────────────────────────────────
-  const loadData = useCallback(async () => {
-    try {
-      setError('')
-      const [catRes, itemRes] = await Promise.all([
-        getCategories(),
-        getMenuItems(),
-      ])
-      setCategories(catRes.categories || [])
-      setItems(itemRes.items || [])
-    } catch (err) {
-      setError(err.message || 'Failed to load menu data.')
-    } finally {
-      setLoading(false)
+  useEffect(() => {
+    let mounted = true
+    Promise.all([
+      getCategories({ includeInactive: true }),
+      getMenuItems(),
+    ])
+      .then(([catRes, itemRes]) => {
+        if (!mounted) return
+        setCategories(catRes.categories || [])
+        setItems(itemRes.items || [])
+        setError('')
+      })
+      .catch((err) => {
+        if (!mounted) return
+        setError(err.message || 'Failed to load menu data.')
+      })
+      .finally(() => {
+        if (mounted) setLoading(false)
+      })
+    return () => {
+      mounted = false
     }
   }, [])
 
   useEffect(() => {
-    loadData()
-  }, [loadData])
+    if (!confirmRemoveCat) return undefined
+    function handleKeyDown(e) {
+      if (e.key === 'Escape' && !removingCat) {
+        setConfirmRemoveCat(null)
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [confirmRemoveCat, removingCat])
 
   // ── Filtering & Dynamic Counts ─────────────────────────────────────────────
   const segmentItems = useMemo(
@@ -90,23 +108,53 @@ export function MenuManagement() {
   // ── Category Handlers ──────────────────────────────────────────────────────
   async function handleCreateCategory(data) {
     const created = await createCategory(data)
-    setCategories((prev) =>
-      [...prev, created].sort((a, b) => a.sortOrder - b.sortOrder)
-    )
+    setCategories((prev) => {
+      const exists = prev.some((c) => c.id === created.id)
+      const next = exists
+        ? prev.map((c) => (c.id === created.id ? created : c))
+        : [...prev, created]
+      return next.sort((a, b) => a.sortOrder - b.sortOrder)
+    })
     showNotice(`Category "${created.name}" created.`)
   }
 
-  async function handleRemoveCategory(cat) {
+  async function handleToggleCategoryStatus(cat) {
     try {
       setError('')
-      await deleteCategory(cat.id)
-      setCategories((prev) => prev.filter((c) => c.id !== cat.id))
+      const updated = await setCategoryStatus(cat.id, !cat.isActive)
+      setCategories((prev) => prev.map((c) => (c.id === updated.id ? updated : c)))
+      showNotice(
+        `Category "${updated.name}" ${updated.isActive ? 'restored' : 'deactivated'}.`
+      )
+    } catch (err) {
+      setError(err.message || 'Failed to update category status.')
+    }
+  }
+
+  async function handleConfirmRemoveCategory() {
+    if (!confirmRemoveCat) return
+    const cat = confirmRemoveCat
+    setRemovingCat(true)
+    try {
+      setError('')
+      const result = await deleteCategory(cat.id)
+      if (result.softDeleted) {
+        setCategories((prev) =>
+          prev.map((c) => (c.id === cat.id ? { ...c, isActive: false } : c))
+        )
+      } else {
+        setCategories((prev) => prev.filter((c) => c.id !== cat.id))
+      }
       if (selectedCategoryId === cat.id) {
         setSelectedCategoryId(null)
       }
+      setConfirmRemoveCat(null)
       showNotice(`Category "${cat.name}" removed.`)
     } catch (err) {
       setError(err.message || 'Failed to remove category.')
+      setConfirmRemoveCat(null)
+    } finally {
+      setRemovingCat(false)
     }
   }
 
@@ -204,21 +252,35 @@ export function MenuManagement() {
               <li key={cat.id} className="category-row">
                 <button
                   type="button"
-                  className={`category-item ${selectedCategoryId === cat.id ? 'category-item--active' : ''}`}
+                  className={`category-item ${selectedCategoryId === cat.id ? 'category-item--active' : ''} ${!cat.isActive ? 'category-item--inactive' : ''}`}
                   onClick={() => setSelectedCategoryId(cat.id)}
                 >
-                  <span>{cat.name}</span>
+                  <span>
+                    {cat.name}
+                    {!cat.isActive && <span className="inactive-label"> (Inactive)</span>}
+                  </span>
                   <span className="category-count">{categoryCounts.get(cat.id) || 0}</span>
                 </button>
-                <button
-                  type="button"
-                  className="category-remove-btn"
-                  onClick={() => handleRemoveCategory(cat)}
-                  title={`Remove ${cat.name}`}
-                  aria-label={`Remove ${cat.name}`}
-                >
-                  ×
-                </button>
+                {cat.isActive ? (
+                  <button
+                    type="button"
+                    className="category-remove-btn"
+                    onClick={() => setConfirmRemoveCat(cat)}
+                    title={`Remove ${cat.name}`}
+                    aria-label={`Remove ${cat.name}`}
+                  >
+                    ×
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className="action-pill action-pill--small"
+                    onClick={() => handleToggleCategoryStatus(cat)}
+                    title={`Restore ${cat.name}`}
+                  >
+                    Restore
+                  </button>
+                )}
               </li>
             ))}
           </ul>
@@ -254,7 +316,7 @@ export function MenuManagement() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
-              <button type="button" className="action-pill" onClick={openNewItem}>
+              <button type="button" className="action-pill action-pill--solid" onClick={openNewItem}>
                 + New Item
               </button>
             </div>
@@ -360,6 +422,49 @@ export function MenuManagement() {
         item={editingItem}
         categories={categories}
       />
+      {confirmRemoveCat && (
+        <div
+          className="modal-overlay"
+          onClick={() => !removingCat && setConfirmRemoveCat(null)}
+        >
+          <div
+            className="modal-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="confirm-remove-category-title"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <span className="editorial-eyebrow">Category Removal</span>
+            <h2 id="confirm-remove-category-title" className="modal-title">
+              Remove &ldquo;{confirmRemoveCat.name}&rdquo;?
+            </h2>
+            <p className="owner-subtitle" style={{ marginBottom: '1.5rem' }}>
+              Empty categories are permanently deleted. Categories with archived items are
+              deactivated and can be restored later. Categories with active items cannot be
+              removed.
+            </p>
+            <div className="modal-actions">
+              <button
+                type="button"
+                className="quiet-button"
+                onClick={() => setConfirmRemoveCat(null)}
+                disabled={removingCat}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="primary-button"
+                onClick={handleConfirmRemoveCategory}
+                disabled={removingCat}
+                autoFocus
+              >
+                {removingCat ? 'Removing…' : 'Remove Category'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

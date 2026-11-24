@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import PropTypes from 'prop-types'
+import { PasswordInput } from '../../../shared/components/PasswordInput.jsx'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const ROLE_OPTIONS = [
@@ -21,6 +22,14 @@ function StaffModalForm({ onClose, onSave, staff }) {
   const [isActive, setIsActive] = useState(staff ? staff.isActive !== false : true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+
+  useEffect(() => {
+    function handleKeyDown(e) {
+      if (e.key === 'Escape' && !saving) onClose()
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [saving, onClose])
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -92,7 +101,7 @@ function StaffModalForm({ onClose, onSave, staff }) {
   }
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay" onClick={() => !saving && onClose()}>
       <div
         className="modal-dialog modal-dialog--wide"
         role="dialog"
@@ -176,9 +185,8 @@ function StaffModalForm({ onClose, onSave, staff }) {
               <label className="form-label" htmlFor="staff-password-input">
                 {isEditing ? 'NEW PASSWORD (OPTIONAL)' : 'MASTER PASSWORD'}
               </label>
-              <input
+              <PasswordInput
                 id="staff-password-input"
-                type="password"
                 className="form-input"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -193,11 +201,11 @@ function StaffModalForm({ onClose, onSave, staff }) {
               <label className="form-label" htmlFor="staff-pin-input">
                 4-DIGIT TERMINAL PIN {isEditing ? '(OPTIONAL)' : '(OPTIONAL)'}
               </label>
-              <input
+              <PasswordInput
                 id="staff-pin-input"
-                type="password"
                 inputMode="numeric"
                 className="form-input"
+                toggleLabel="PIN"
                 value={clearPin ? '' : pinCode}
                 onChange={(e) => {
                   setClearPin(false)
