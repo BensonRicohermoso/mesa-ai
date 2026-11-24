@@ -1,0 +1,101 @@
+import { useState, useEffect } from 'react'
+import PropTypes from 'prop-types'
+
+export function CategoryModal({ isOpen, onClose, onSave }) {
+  const [name, setName] = useState('')
+  const [sortOrder, setSortOrder] = useState(0)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    if (isOpen) {
+      setName('')
+      setSortOrder(0)
+      setError('')
+      setSaving(false)
+    }
+  }, [isOpen])
+
+  useEffect(() => {
+    if (!isOpen) return undefined
+    function handleKeyDown(e) {
+      if (e.key === 'Escape' && !saving) onClose()
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isOpen, saving, onClose])
+
+  if (!isOpen) return null
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    const trimmed = name.trim()
+    if (!trimmed) {
+      setError('Category name is required.')
+      return
+    }
+
+    setSaving(true)
+    setError('')
+    try {
+      await onSave({ name: trimmed, sortOrder })
+      onClose()
+    } catch (err) {
+      setError(err.message || 'Failed to create category.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="modal-overlay" onClick={() => !saving && onClose()}>
+      <div className="modal-dialog" onClick={(e) => e.stopPropagation()}>
+        <span className="editorial-eyebrow">Category Configuration</span>
+        <h2 className="modal-title">New Category</h2>
+
+        <form onSubmit={handleSubmit}>
+          <div className="form-group">
+            <label className="form-label">CATEGORY NAME</label>
+            <input
+              type="text"
+              className="form-input"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              maxLength={100}
+              autoFocus
+              required
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">DISPLAY ORDER</label>
+            <input
+              type="number"
+              className="form-input"
+              value={sortOrder}
+              onChange={(e) => setSortOrder(Number(e.target.value))}
+              min={0}
+            />
+          </div>
+
+          {error && <p className="form-error">{error}</p>}
+
+          <div className="modal-actions">
+            <button type="button" className="quiet-button" onClick={onClose} disabled={saving}>
+              Cancel
+            </button>
+            <button type="submit" className="primary-button" disabled={saving}>
+              {saving ? 'Saving…' : 'Create Category'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+CategoryModal.propTypes = {
+  isOpen: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired,
+  onSave: PropTypes.func.isRequired,
+}
