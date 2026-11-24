@@ -30,9 +30,14 @@ export function PinPadModal({ isOpen, onClose, onSwitchSuccess, activeStaffId })
   if (!isOpen) return null
 
   function handleDigit(digit) {
-    if (pin.length < 6) {
-      setPin((prev) => prev + digit)
+    if (pin.length < 4) {
+      const nextPin = pin + digit
+      setPin(nextPin)
       setError('')
+      // Auto-submit when all 4 digits are punched in
+      if (nextPin.length === 4) {
+        submitPin(nextPin)
+      }
     }
   }
 
@@ -46,17 +51,11 @@ export function PinPadModal({ isOpen, onClose, onSwitchSuccess, activeStaffId })
     setError('')
   }
 
-  async function handleSubmit(e) {
-    if (e) e.preventDefault()
-    if (pin.length < 4) {
-      setError('PIN must be at least 4 digits')
-      return
-    }
-
+  async function submitPin(pinToVerify) {
     setIsSubmitting(true)
     setError('')
     try {
-      await onSwitchSuccess(pin, selectedStaff?.id || null)
+      await onSwitchSuccess(pinToVerify, selectedStaff?.id || null)
       onClose()
     } catch (err) {
       setError(err.message || 'Incorrect PIN')
@@ -64,6 +63,15 @@ export function PinPadModal({ isOpen, onClose, onSwitchSuccess, activeStaffId })
     } finally {
       setIsSubmitting(false)
     }
+  }
+
+  function handleSubmit(e) {
+    if (e) e.preventDefault()
+    if (pin.length !== 4) {
+      setError('Please enter a 4-digit PIN.')
+      return
+    }
+    submitPin(pin)
   }
 
   return (
@@ -100,9 +108,9 @@ export function PinPadModal({ isOpen, onClose, onSwitchSuccess, activeStaffId })
           </div>
         )}
 
-        {/* PIN Dots indicator */}
+        {/* Exactly 4 PIN Dots indicator */}
         <div className="pin-display" aria-label="PIN digits entered">
-          {[0, 1, 2, 3, 4, 5].map((index) => (
+          {[0, 1, 2, 3].map((index) => (
             <span
               key={index}
               className={`pin-dot ${index < pin.length ? 'filled' : ''}`}

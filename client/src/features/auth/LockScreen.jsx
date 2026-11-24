@@ -7,9 +7,13 @@ export function LockScreen({ staff, shiftRemainingFormatted, onUnlock, onSignOut
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   function handleDigit(digit) {
-    if (pin.length < 6) {
-      setPin((prev) => prev + digit)
+    if (pin.length < 4) {
+      const nextPin = pin + digit
+      setPin(nextPin)
       setError('')
+      if (nextPin.length === 4) {
+        submitUnlock(nextPin)
+      }
     }
   }
 
@@ -23,22 +27,25 @@ export function LockScreen({ staff, shiftRemainingFormatted, onUnlock, onSignOut
     setError('')
   }
 
-  async function handleUnlock() {
-    if (pin.length < 4) {
-      setError('Please enter your 4-to-6 digit PIN.')
-      return
-    }
-
+  async function submitUnlock(pinToVerify) {
     setIsSubmitting(true)
     setError('')
     try {
-      await onUnlock(pin)
+      await onUnlock(pinToVerify)
     } catch (err) {
       setError(err.message || 'Incorrect PIN')
       setPin('')
     } finally {
       setIsSubmitting(false)
     }
+  }
+
+  function handleUnlock() {
+    if (pin.length !== 4) {
+      setError('Please enter your 4-digit PIN.')
+      return
+    }
+    submitUnlock(pin)
   }
 
   return (
@@ -56,9 +63,9 @@ export function LockScreen({ staff, shiftRemainingFormatted, onUnlock, onSignOut
           Terminal is secured for this 6-hour shift. Enter your 4-digit PIN to resume your shift.
         </p>
 
-        {/* PIN Dots */}
+        {/* Exactly 4 PIN Dots */}
         <div className="pin-display" aria-label="PIN digits entered">
-          {[0, 1, 2, 3, 4, 5].map((index) => (
+          {[0, 1, 2, 3].map((index) => (
             <span
               key={index}
               className={`pin-dot ${index < pin.length ? 'filled' : ''}`}

@@ -11,8 +11,8 @@ export function OwnerHome() {
 
   async function handleSetPin(e) {
     e.preventDefault()
-    if (!/^\d{4,6}$/.test(newPin.trim())) {
-      setPinFeedback('PIN must be 4 to 6 numbers.')
+    if (!/^\d{4}$/.test(newPin.trim())) {
+      setPinFeedback('PIN must be exactly 4 numbers.')
       return
     }
 
@@ -20,7 +20,7 @@ export function OwnerHome() {
     setPinFeedback('')
     try {
       await updatePin(newPin.trim())
-      setPinFeedback('Your 4-6 digit quick PIN is updated!')
+      setPinFeedback('Your 4-digit quick PIN is updated!')
       setNewPin('')
     } catch (err) {
       setPinFeedback(err.message || 'Failed to update PIN.')
@@ -91,7 +91,7 @@ export function OwnerHome() {
             <input
               type="password"
               inputMode="numeric"
-              maxLength={6}
+              maxLength={4}
               placeholder="e.g. 1234"
               value={newPin}
               onChange={(e) => setNewPin(e.target.value.replace(/\D/g, ''))}
