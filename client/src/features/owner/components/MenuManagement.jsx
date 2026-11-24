@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import {
   getCategories,
   createCategory,
@@ -30,6 +30,8 @@ export function MenuManagement() {
   const [catModalOpen, setCatModalOpen] = useState(false)
   const [itemModalOpen, setItemModalOpen] = useState(false)
   const [editingItem, setEditingItem] = useState(null)
+  const [confirmRemoveCat, setConfirmRemoveCat] = useState(null)
+  const [removingCat, setRemovingCat] = useState(false)
 
   function showNotice(msg) {
     setFeedback(msg)
@@ -39,25 +41,40 @@ export function MenuManagement() {
   }
 
   // ── Data Loading ───────────────────────────────────────────────────────────
-  const loadData = useCallback(async () => {
-    try {
-      setError('')
-      const [catRes, itemRes] = await Promise.all([
-        getCategories({ includeInactive: true }),
-        getMenuItems(),
-      ])
-      setCategories(catRes.categories || [])
-      setItems(itemRes.items || [])
-    } catch (err) {
-      setError(err.message || 'Failed to load menu data.')
-    } finally {
-      setLoading(false)
+  useEffect(() => {
+    let mounted = true
+    Promise.all([
+      getCategories({ includeInactive: true }),
+      getMenuItems(),
+    ])
+      .then(([catRes, itemRes]) => {
+        if (!mounted) return
+        setCategories(catRes.categories || [])
+        setItems(itemRes.items || [])
+        setError('')
+      })
+      .catch((err) => {
+        if (!mounted) return
+        setError(err.message || 'Failed to load menu data.')
+      })
+      .finally(() => {
+        if (mounted) setLoading(false)
+      })
+    return () => {
+      mounted = false
     }
   }, [])
 
   useEffect(() => {
-    loadData()
-  }, [loadData])
+    if (!confirmRemoveCat) return undefined
+    function handleKeyDown(e) {
+      if (e.key === 'Escape' && !removingCat) {
+        setConfirmRemoveCat(null)
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [confirmRemoveCat, removingCat])
 
   // ── Filtering & Dynamic Counts ─────────────────────────────────────────────
   const segmentItems = useMemo(
@@ -114,7 +131,10 @@ export function MenuManagement() {
     }
   }
 
-  async function handleRemoveCategory(cat) {
+  async function handleConfirmRemoveCategory() {
+    if (!confirmRemoveCat) return
+    const cat = confirmRemoveCat
+    setRemovingCat(true)
     try {
       setError('')
       const result = await deleteCategory(cat.id)
@@ -128,9 +148,13 @@ export function MenuManagement() {
       if (selectedCategoryId === cat.id) {
         setSelectedCategoryId(null)
       }
+      setConfirmRemoveCat(null)
       showNotice(`Category "${cat.name}" removed.`)
     } catch (err) {
       setError(err.message || 'Failed to remove category.')
+      setConfirmRemoveCat(null)
+    } finally {
+      setRemovingCat(false)
     }
   }
 
@@ -241,7 +265,7 @@ export function MenuManagement() {
                   <button
                     type="button"
                     className="category-remove-btn"
-                    onClick={() => handleRemoveCategory(cat)}
+                    onClick={() => setConfirmRemoveCat(cat)}
                     title={`Remove ${cat.name}`}
                     aria-label={`Remove ${cat.name}`}
                   >
@@ -292,7 +316,7 @@ export function MenuManagement() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
-              <button type="button" className="action-pill" onClick={openNewItem}>
+              <button type="button" className="action-pill action-pill--solid" onClick={openNewItem}>
                 + New Item
               </button>
             </div>
@@ -398,6 +422,49 @@ export function MenuManagement() {
         item={editingItem}
         categories={categories}
       />
+      {confirmRemoveCat && (
+        <div
+          className="modal-overlay"
+          onClick={() => !removingCat && setConfirmRemoveCat(null)}
+        >
+          <div
+            className="modal-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="confirm-remove-category-title"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <span className="editorial-eyebrow">Category Removal</span>
+            <h2 id="confirm-remove-category-title" className="modal-title">
+              Remove &ldquo;{confirmRemoveCat.name}&rdquo;?
+            </h2>
+            <p className="owner-subtitle" style={{ marginBottom: '1.5rem' }}>
+              Empty categories are permanently deleted. Categories with archived items are
+              deactivated and can be restored later. Categories with active items cannot be
+              removed.
+            </p>
+            <div className="modal-actions">
+              <button
+                type="button"
+                className="quiet-button"
+                onClick={() => setConfirmRemoveCat(null)}
+                disabled={removingCat}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="primary-button"
+                onClick={handleConfirmRemoveCategory}
+                disabled={removingCat}
+                autoFocus
+              >
+                {removingCat ? 'Removing…' : 'Remove Category'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -27,6 +27,15 @@ export function PinPadModal({ isOpen, onClose, onSwitchSuccess, activeStaffId })
     }
   }, [isOpen, activeStaffId])
 
+  useEffect(() => {
+    if (!isOpen) return undefined
+    function handleKeyDown(e) {
+      if (e.key === 'Escape' && !isSubmitting) onClose()
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isOpen, isSubmitting, onClose])
+
   if (!isOpen) return null
 
   function handleDigit(digit) {
@@ -79,7 +88,7 @@ export function PinPadModal({ isOpen, onClose, onSwitchSuccess, activeStaffId })
       <div className="pin-card">
         <header className="pin-header">
           <div>
-            <span className="owner-eyebrow">Quick Shift Switch</span>
+            <span className="editorial-eyebrow">Quick Shift Switch</span>
             <h2 id="pin-title">Enter Staff PIN</h2>
           </div>
           <button className="quiet-button pin-close" type="button" onClick={onClose}>

@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import PropTypes from 'prop-types'
 import QRCode from 'qrcode'
 
@@ -51,6 +51,15 @@ function getCustomerUrl(table) {
 }
 
 export function PrintTableQrModal({ isOpen, onClose, tables, mode }) {
+  useEffect(() => {
+    if (!isOpen || !tables || tables.length === 0) return undefined
+    function handleKeyDown(e) {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isOpen, tables, onClose])
+
   if (!isOpen || !tables || tables.length === 0) return null
 
   const isBatch = mode === 'all' || tables.length > 1
@@ -63,12 +72,15 @@ export function PrintTableQrModal({ isOpen, onClose, tables, mode }) {
     <div className="modal-overlay print-modal-overlay" onClick={onClose}>
       <div
         className={`modal-dialog print-modal-dialog ${isBatch ? 'modal-dialog--print-wide' : 'modal-dialog--wide'}`}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="print-qr-modal-title"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="print-modal-header no-print">
           <div>
             <span className="editorial-eyebrow">Table Tent Presentation</span>
-            <h2 className="modal-title" style={{ marginBottom: 0 }}>
+            <h2 id="print-qr-modal-title" className="modal-title" style={{ marginBottom: 0 }}>
               {isBatch
                 ? `Printable Tent Cards (${tables.length})`
                 : `${tables[0].label} — QR Tent Card`}

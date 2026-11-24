@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import PropTypes from 'prop-types'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -21,6 +21,14 @@ function StaffModalForm({ onClose, onSave, staff }) {
   const [isActive, setIsActive] = useState(staff ? staff.isActive !== false : true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+
+  useEffect(() => {
+    function handleKeyDown(e) {
+      if (e.key === 'Escape' && !saving) onClose()
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [saving, onClose])
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -92,7 +100,7 @@ function StaffModalForm({ onClose, onSave, staff }) {
   }
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay" onClick={() => !saving && onClose()}>
       <div
         className="modal-dialog modal-dialog--wide"
         role="dialog"

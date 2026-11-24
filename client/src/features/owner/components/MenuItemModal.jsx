@@ -3,60 +3,44 @@ import PropTypes from 'prop-types'
 
 const SAFE_URL_RE = /^(https?:\/\/|\/)/i
 
-export function MenuItemModal({ isOpen, onClose, onSave, item, categories }) {
-  const [form, setForm] = useState({
+function buildInitialForm(item, categories) {
+  if (item) {
+    return {
+      name: item.name || '',
+      categoryId: item.categoryId || '',
+      description: item.description || '',
+      imageUrl: item.imageUrl || '',
+      price: item.price ?? '',
+      costPrice: item.costPrice ?? '',
+      isAvailable: item.isAvailable !== false,
+    }
+  }
+  const firstActive = (categories || []).find((c) => c.isActive)
+  return {
     name: '',
-    categoryId: '',
+    categoryId: firstActive?.id || categories?.[0]?.id || '',
     description: '',
     imageUrl: '',
     price: '',
     costPrice: '',
     isAvailable: true,
-  })
+  }
+}
+
+function MenuItemModalForm({ onClose, onSave, item, categories }) {
+  const [form, setForm] = useState(() => buildInitialForm(item, categories))
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
   const isEditing = Boolean(item)
 
   useEffect(() => {
-    if (isOpen) {
-      if (item) {
-        setForm({
-          name: item.name || '',
-          categoryId: item.categoryId || '',
-          description: item.description || '',
-          imageUrl: item.imageUrl || '',
-          price: item.price ?? '',
-          costPrice: item.costPrice ?? '',
-          isAvailable: item.isAvailable !== false,
-        })
-      } else {
-        const firstActive = (categories || []).find((c) => c.isActive)
-        setForm({
-          name: '',
-          categoryId: firstActive?.id || categories?.[0]?.id || '',
-          description: '',
-          imageUrl: '',
-          price: '',
-          costPrice: '',
-          isAvailable: true,
-        })
-      }
-      setError('')
-      setSaving(false)
-    }
-  }, [isOpen, item, categories])
-
-  useEffect(() => {
-    if (!isOpen) return undefined
     function handleKeyDown(e) {
       if (e.key === 'Escape' && !saving) onClose()
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [isOpen, saving, onClose])
-
-  if (!isOpen) return null
+  }, [saving, onClose])
 
   function handleChange(field, value) {
     setForm((prev) => ({ ...prev, [field]: value }))
@@ -112,15 +96,26 @@ export function MenuItemModal({ isOpen, onClose, onSave, item, categories }) {
 
   return (
     <div className="modal-overlay" onClick={() => !saving && onClose()}>
-      <div className="modal-dialog modal-dialog--wide" onClick={(e) => e.stopPropagation()}>
+      <div
+        className="modal-dialog modal-dialog--wide"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="menu-item-modal-title"
+        onClick={(e) => e.stopPropagation()}
+      >
         <span className="editorial-eyebrow">Menu Item Configuration</span>
-        <h2 className="modal-title">{isEditing ? 'Edit Menu Item' : 'New Menu Item'}</h2>
+        <h2 id="menu-item-modal-title" className="modal-title">
+          {isEditing ? 'Edit Menu Item' : 'New Menu Item'}
+        </h2>
 
         <form onSubmit={handleSubmit}>
           <div className="form-row">
             <div className="form-group form-group--flex">
-              <label className="form-label">ITEM NAME</label>
+              <label className="form-label" htmlFor="menu-item-name-input">
+                ITEM NAME
+              </label>
               <input
+                id="menu-item-name-input"
                 type="text"
                 className="form-input"
                 value={form.name}
@@ -131,8 +126,11 @@ export function MenuItemModal({ isOpen, onClose, onSave, item, categories }) {
               />
             </div>
             <div className="form-group">
-              <label className="form-label">CATEGORY</label>
+              <label className="form-label" htmlFor="menu-item-category-select">
+                CATEGORY
+              </label>
               <select
+                id="menu-item-category-select"
                 className="form-input"
                 value={form.categoryId}
                 onChange={(e) => handleChange('categoryId', e.target.value)}
@@ -149,8 +147,11 @@ export function MenuItemModal({ isOpen, onClose, onSave, item, categories }) {
           </div>
 
           <div className="form-group">
-            <label className="form-label">DESCRIPTION</label>
+            <label className="form-label" htmlFor="menu-item-description-input">
+              DESCRIPTION
+            </label>
             <textarea
+              id="menu-item-description-input"
               className="form-input form-textarea"
               value={form.description}
               onChange={(e) => handleChange('description', e.target.value)}
@@ -159,8 +160,11 @@ export function MenuItemModal({ isOpen, onClose, onSave, item, categories }) {
           </div>
 
           <div className="form-group">
-            <label className="form-label">IMAGE URL</label>
+            <label className="form-label" htmlFor="menu-item-image-url-input">
+              IMAGE URL
+            </label>
             <input
+              id="menu-item-image-url-input"
               type="text"
               className="form-input"
               value={form.imageUrl}
@@ -171,8 +175,11 @@ export function MenuItemModal({ isOpen, onClose, onSave, item, categories }) {
 
           <div className="form-row">
             <div className="form-group">
-              <label className="form-label">SELLING PRICE (₱)</label>
+              <label className="form-label" htmlFor="menu-item-price-input">
+                SELLING PRICE (₱)
+              </label>
               <input
+                id="menu-item-price-input"
                 type="number"
                 className="form-input"
                 value={form.price}
@@ -183,8 +190,11 @@ export function MenuItemModal({ isOpen, onClose, onSave, item, categories }) {
               />
             </div>
             <div className="form-group">
-              <label className="form-label">COST PRICE (₱)</label>
+              <label className="form-label" htmlFor="menu-item-cost-input">
+                COST PRICE (₱)
+              </label>
               <input
+                id="menu-item-cost-input"
                 type="number"
                 className="form-input"
                 value={form.costPrice}
@@ -197,7 +207,9 @@ export function MenuItemModal({ isOpen, onClose, onSave, item, categories }) {
           </div>
 
           <div className="form-group form-group--inline">
-            <label className="form-label">AVAILABILITY</label>
+            <span className="form-label" style={{ marginBottom: 0 }}>
+              AVAILABILITY
+            </span>
             <button
               type="button"
               className={`stock-toggle ${form.isAvailable ? 'stock-toggle--in' : 'stock-toggle--out'}`}
@@ -220,6 +232,26 @@ export function MenuItemModal({ isOpen, onClose, onSave, item, categories }) {
         </form>
       </div>
     </div>
+  )
+}
+
+MenuItemModalForm.propTypes = {
+  onClose: PropTypes.func.isRequired,
+  onSave: PropTypes.func.isRequired,
+  item: PropTypes.object,
+  categories: PropTypes.array,
+}
+
+export function MenuItemModal({ isOpen, onClose, onSave, item, categories }) {
+  if (!isOpen) return null
+  return (
+    <MenuItemModalForm
+      key={item?.id || 'new'}
+      onClose={onClose}
+      onSave={onSave}
+      item={item}
+      categories={categories}
+    />
   )
 }
 

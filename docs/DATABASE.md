@@ -11,6 +11,8 @@
 | 5 | `20261122100400_payments.sql` | Create payment records for counter and future online payments. | TBD | 2026-11-22 | Applied | 2026-11-22 |
 | 6 | `20261122100500_indexes_triggers_and_rls.sql` | Add operational and analytics indexes, updated-at triggers, and RLS. | TBD | 2026-11-22 | Applied | 2026-11-22 |
 | 7 | `20261122100600_create_order_function.sql` | Add the atomic customer order creation RPC function. | TBD | 2026-11-22 | Applied | 2026-11-22 |
+| 8 | `20261124100000_staff_pin.sql` | Add `pin_code` column to `staff_profiles` for quick POS shift switching. | Dev 2 | 2026-11-24 | Pending | — |
+| 9 | `20261125100000_fix_drinks_category_and_order_check.sql` | Reactivate Drinks category, backfill/scrub PIN metadata, and check parent category `is_active` in `create_order`. | Dev 2 | 2026-11-25 | Pending | — |
 
 ## Seed Data
 
@@ -42,6 +44,7 @@ erDiagram
     text full_name
     user_role role
     boolean is_active
+    text pin_code
     timestamptz created_at
     timestamptz updated_at
   }
@@ -146,6 +149,7 @@ erDiagram
 | `full_name` | `text` | Staff member display name. |
 | `role` | `user_role` | Application role: admin, cashier, or kitchen. |
 | `is_active` | `boolean` | Whether the account is active. |
+| `pin_code` | `text` | Optional 4-to-6 digit numeric PIN for quick POS shift switching (added in `20261124100000_staff_pin.sql`). |
 | `created_at` | `timestamptz` | Profile creation time. |
 | `updated_at` | `timestamptz` | Last profile update time. |
 
