@@ -17,7 +17,7 @@ MESA-AI currently has the repository structure, Supabase setup, seven applied da
 | Order tracking | Not started |
 | Analytics functions | Not started |
 | Auth and management (Dev 2) | In progress |
-| Dashboard and AI (Dev 2) | Not started |
+| Dashboard and AI (Dev 2) | In progress |
 | QA and seed scenarios (Member 3) | In progress |
 | Deployment | Not started |
 | Documentation and presentation | In progress |
@@ -57,12 +57,12 @@ MESA-AI currently has the repository structure, Supabase setup, seven applied da
 - [x] Table management: table CRUD, active state, customer QR URLs, and print-friendly QR output.
 - [x] Staff management: provision users, assign roles, activate/deactivate accounts, and prevent removal of the last active admin.
 
-### Owner dashboard and reports — Not started
+### Owner dashboard and reports — Done
 
-- [ ] Owner dashboard: date filters, KPI cards, sales/peak-hour charts, top items, recent orders, and responsive states.
-- [ ] Analytics and reports UI: comparisons, menu engineering, performance views, filters, exports, empty/error states.
-- [ ] Consume Dev 1 analytics APIs; do not duplicate analytics calculations in Dev 2 code.
-- [ ] Use only **gross profit** and **gross margin** terminology.
+- [x] Owner dashboard: date filters, KPI cards, sales/peak-hour charts, top items, recent orders, and responsive states.
+- [x] Analytics and reports UI: comparisons, menu engineering, performance views, filters, exports, empty/error states.
+- [x] Consume Dev 1 analytics APIs; do not duplicate analytics calculations in Dev 2 code. _(Live API integration pending Dev 1; preview fixtures available via toggle.)_
+- [x] Use only **gross profit** and **gross margin** terminology.
 
 ### Gemini and AI features — Not started
 
@@ -77,8 +77,7 @@ MESA-AI currently has the repository structure, Supabase setup, seven applied da
 - [x] `feature/dev2-menu-management`
 - [x] `feature/dev2-table-management`
 - [x] `feature/dev2-staff-management`
-- [ ] `feature/dev2-owner-dashboard`
-- [ ] `feature/dev2-analytics-reports-ui`
+- [x] `feature/dev2-owner-dashboard` (includes analytics & reports UI)
 - [ ] `feature/dev2-gemini-integration`
 - [ ] `feature/dev2-ai-daily-insights`
 - [ ] `feature/dev2-ai-forecast-recommendations`
@@ -113,6 +112,18 @@ Customer menu and cart UI at `/t/:tableCode`.
 - Implemented and verified Table Management APIs (`/api/tables`) with admin RBAC, alphanumeric code validation, duplicate rejection, and active-state toggling.
 - Built the Owner `03 · Table Suite` UI (`TableManagement`, `TableModal`, `PrintTableQrModal`) with local vector SVG QR generation (`qrcode`) and print-ready table tent cards.
 - Added automated Table Management API tests in `server/tests/tables.test.js`.
+
+### 2026-11-25 (continued)
+
+- Implemented the Owner Executive Dashboard (`01 · Overview`) with 4 KPI cards (Gross Sales, Gross Profit, Gross Margin, AOV), Recharts sales trend (Area + Line) and peak hours (Bar) charts, top 5 items table, and 8 recent orders table.
+- Added `05 · Analytics & Reports` tab with three sub-views: Comparisons & Mix (delta matrix, comparison chart, payment breakdown, order outcomes, paginated orders audit), Menu Engineering (quadrant scatter chart, sortable table, CSV export), and Floor & Kitchen Performance (cashier KPIs, per-cashier table, kitchen pipeline, table performance).
+- Built shared `AnalyticsToolbar` with date presets (Today/7D/30D/This Month/Custom), custom date inputs, category and payment method filters, compare toggle, refresh, and Live/Preview source toggle.
+- Refactored station session/PIN settings from inline Overview into dismissible `StationSettingsModal`.
+- Added analytics API client (`analyticsApi.js`), display formatters (`analyticsFormatters.js`), RFC-4180 CSV export with formula injection protection (`csvExport.js`), and static preview fixtures (`analyticsPreviewData.js`).
+- Added `@media print` editorial report styles scoped to `.analytics-print-report` without breaking existing tent card print styles.
+- Documented the proposed Analytics API contract (5 endpoints) in `docs/API.md`.
+- Zero analytics calculations in client code — all KPIs, deltas, quadrant classifications, and benchmarks come from backend (or preview fixtures).
+- Exclusively uses "Gross Profit" and "Gross Margin" terminology throughout.
 
 ### 2026-11-24
 

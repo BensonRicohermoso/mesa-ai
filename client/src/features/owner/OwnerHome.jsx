@@ -1,10 +1,14 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { useAuth } from '../../context/useAuth.js'
 import { PinPadModal } from '../auth/PinPadModal.jsx'
 import { MenuManagement } from './components/MenuManagement.jsx'
 import { TableManagement } from './components/TableManagement.jsx'
 import { StaffManagement } from './components/StaffManagement.jsx'
-import { PasswordInput } from '../../shared/components/PasswordInput.jsx'
+import { StationSettingsModal } from './components/StationSettingsModal.jsx'
+import { AnalyticsToolbar } from './components/AnalyticsToolbar.jsx'
+import { OwnerDashboard } from './components/OwnerDashboard.jsx'
+import { AnalyticsReports } from './components/AnalyticsReports.jsx'
+import { getPresetDateRange } from './utils/analyticsFormatters.js'
 import './owner.css'
 
 const TABS = [
@@ -12,37 +16,51 @@ const TABS = [
   { key: 'menu', label: '02 · Menu Atelier' },
   { key: 'tables', label: '03 · Table Suite' },
   { key: 'staff', label: '04 · Staff Roster' },
+  { key: 'reports', label: '05 · Analytics & Reports' },
 ]
+
+function buildDefaultFilter(sourceMode = 'live') {
+  const range = getPresetDateRange('7d')
+  return {
+    preset: '7d',
+    from: range.from,
+    to: range.to,
+    sourceMode,
+    compare: false,
+    categoryId: 'all',
+    paymentMethod: 'all',
+  }
+}
 
 export function OwnerHome() {
   const { session, logout, lockScreen, switchStaff, updatePin, shiftRemainingFormatted } = useAuth()
   const [isPinModalOpen, setIsPinModalOpen] = useState(false)
+  const [isStationModalOpen, setIsStationModalOpen] = useState(false)
   const [activeTab, setActiveTab] = useState('overview')
 
-  // PIN settings state
-  const [newPin, setNewPin] = useState('')
-  const [pinFeedback, setPinFeedback] = useState('')
-  const [isUpdatingPin, setIsUpdatingPin] = useState(false)
+  // Shared analytics filter state (lifted for Overview + Reports)
+  const [analyticsFilter, setAnalyticsFilter] = useState(() => buildDefaultFilter('live'))
+  const [reportsSubView, setReportsSubView] = useState('comparisons')
+  const [refreshNonce, setRefreshNonce] = useState(0)
+  const [isAnalyticsLoading, setIsAnalyticsLoading] = useState(false)
 
-  async function handleSetPin(e) {
-    e.preventDefault()
-    if (!/^\d{4}$/.test(newPin.trim())) {
-      setPinFeedback('PIN must be exactly 4 numeric digits.')
-      return
-    }
+  const handleRefresh = useCallback(() => {
+    setRefreshNonce((k) => k + 1)
+  }, [])
 
-    setIsUpdatingPin(true)
-    setPinFeedback('')
-    try {
-      await updatePin(newPin.trim())
-      setPinFeedback('Personal 4-digit shift PIN updated successfully.')
-      setNewPin('')
-    } catch (err) {
-      setPinFeedback(err.message || 'Failed to update PIN.')
-    } finally {
-      setIsUpdatingPin(false)
-    }
-  }
+  const handleFilterChange = useCallback((next) => {
+    setAnalyticsFilter(next)
+  }, [])
+
+  const handleSwitchToPreview = useCallback(() => {
+    setAnalyticsFilter((prev) => ({ ...prev, sourceMode: 'preview' }))
+  }, [])
+
+  const handleResetRange = useCallback(() => {
+    setAnalyticsFilter((prev) => buildDefaultFilter(prev.sourceMode))
+  }, [])
+
+  const showToolbar = activeTab === 'overview' || activeTab === 'reports'
 
   return (
     <main className="owner-shell">
@@ -61,10 +79,18 @@ export function OwnerHome() {
               <button
                 className="action-pill"
                 type="button"
+                onClick={() => setIsStationModalOpen(true)}
+                title="Station settings, PIN, and session info"
+              >
+                Station &amp; PIN
+              </button>
+              <button
+                className="action-pill"
+                type="button"
                 onClick={() => setIsPinModalOpen(true)}
                 title="Switch floor operator via 4-digit PIN"
               >
-                Switch Operator (PIN)
+                Switch Operator
               </button>
               <button
                 className="action-pill"
@@ -90,80 +116,54 @@ export function OwnerHome() {
             ))}
           </nav>
 
+          {/* ── Analytics Toolbar (shared by Overview & Reports) ── */}
+          {showToolbar && (
+            <AnalyticsToolbar
+              filter={analyticsFilter}
+              onFilterChange={handleFilterChange}
+              onRefresh={handleRefresh}
+              isLoading={isAnalyticsLoading}
+            />
+          )}
+
           {/* ── Tab Content ─────────────────────────────────────── */}
           {activeTab === 'overview' && (
-            <>
-              <h1>Welcome, {session?.staff?.fullName}.</h1>
-              <p className="owner-subtitle">
-                Station authenticated. All transactions, kitchen tickets, and analytics modules
-                are synchronized. Operators may switch shifts rapidly with their 4-digit PIN.
-              </p>
-
-              {/* Session Grid */}
-              <div className="owner-session" aria-label="Current terminal session metrics">
-                <div>
-                  <span>Active Operator</span>
-                  <strong>{session?.staff?.fullName}</strong>
-                </div>
-                <div>
-                  <span>Floor Role</span>
-                  <div>
-                    <span className="role-badge">{session?.staff?.role}</span>
-                  </div>
-                </div>
-                <div>
-                  <span>Account Identity</span>
-                  <strong style={{ fontSize: '1.05rem', wordBreak: 'break-all' }}>
-                    {session?.user?.email || 'Floor Terminal'}
-                  </strong>
-                </div>
-                <div>
-                  <span>Shift Lifespan</span>
-                  <strong style={{ fontStyle: 'italic' }}>
-                    {shiftRemainingFormatted || 'Shift In Progress'}
-                  </strong>
-                </div>
-              </div>
-
-              {/* Quick PIN Passcode Configuration */}
-              <div className="pin-settings-box">
-                <span className="editorial-eyebrow">Station Security</span>
-                <h3>Quick-Switch Passcode</h3>
-                <p className="login-intro" style={{ margin: '0.4rem 0 1rem' }}>
-                  Assign a personal 4-digit numeric PIN to transition between POS, KDS, and management views.
-                </p>
-                <form className="pin-inline-form" onSubmit={handleSetPin}>
-                  <PasswordInput
-                    inputMode="numeric"
-                    maxLength={4}
-                    placeholder="••••"
-                    toggleLabel="PIN"
-                    value={newPin}
-                    onChange={(e) => setNewPin(e.target.value.replace(/\D/g, ''))}
-                    required
-                  />
-                  <button
-                    type="submit"
-                    className="primary-button pin-save-btn"
-                    disabled={isUpdatingPin || newPin.length !== 4}
-                  >
-                    {isUpdatingPin ? 'Saving…' : 'Save PIN'}
-                  </button>
-                </form>
-                {pinFeedback && <p className="pin-feedback">{pinFeedback}</p>}
-              </div>
-
-              <footer className="owner-actions">
-                <button className="quiet-button" type="button" onClick={logout}>
-                  Sign out of station shift &rarr;
-                </button>
-              </footer>
-            </>
+            <OwnerDashboard
+              filter={analyticsFilter}
+              refreshNonce={refreshNonce}
+              onNavigateReports={() => setActiveTab('reports')}
+              onSwitchToPreview={handleSwitchToPreview}
+              onResetRange={handleResetRange}
+              onLoadingChange={setIsAnalyticsLoading}
+            />
           )}
 
           {activeTab === 'menu' && <MenuManagement />}
           {activeTab === 'tables' && <TableManagement />}
           {activeTab === 'staff' && <StaffManagement />}
+
+          {activeTab === 'reports' && (
+            <AnalyticsReports
+              filter={analyticsFilter}
+              subView={reportsSubView}
+              onSubViewChange={setReportsSubView}
+              refreshNonce={refreshNonce}
+              onSwitchToPreview={handleSwitchToPreview}
+              onLoadingChange={setIsAnalyticsLoading}
+            />
+          )}
+
+          {/* ── Compact Station Footer Strip ──────────────────── */}
+          <footer className="owner-station-strip no-print">
+            <span className="owner-station-meta">
+              {session?.staff?.fullName || 'Operator'} &bull;{' '}
+              <span style={{ textTransform: 'uppercase' }}>{session?.staff?.role || 'admin'}</span> &bull;{' '}
+              {shiftRemainingFormatted || 'Shift In Progress'}
+            </span>
+            <button className="quiet-link" type="button" onClick={logout}>
+              Sign out &rarr;
+            </button>
+          </footer>
         </section>
       </div>
 
@@ -173,6 +173,16 @@ export function OwnerHome() {
         onClose={() => setIsPinModalOpen(false)}
         activeStaffId={session?.staff?.id}
         onSwitchSuccess={switchStaff}
+      />
+
+      {/* Station Settings Modal */}
+      <StationSettingsModal
+        isOpen={isStationModalOpen}
+        onClose={() => setIsStationModalOpen(false)}
+        session={session}
+        logout={logout}
+        updatePin={updatePin}
+        shiftRemainingFormatted={shiftRemainingFormatted}
       />
     </main>
   )
