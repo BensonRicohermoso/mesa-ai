@@ -1,13 +1,7 @@
 import { supabase } from "../../config/supabase.js";
+import { createAuthError } from "../../lib/errors.js";
 
-function createAuthError(statusCode, code, message) {
-  const error = new Error(message);
-  error.statusCode = statusCode;
-  error.code = code;
-  return error;
-}
-
-function formatStaff(profile) {
+export function formatStaff(profile) {
   return {
     id: profile.id,
     fullName: profile.full_name,
@@ -15,7 +9,9 @@ function formatStaff(profile) {
   };
 }
 
-async function getActiveStaffProfile(userId) {
+// Shared: load and validate a staff profile by user id.
+// Throws a structured auth error when the profile is missing or inactive.
+export async function getActiveStaffProfile(userId) {
   const { data: profile, error } = await supabase
     .from("staff_profiles")
     .select("id,full_name,role,is_active")
@@ -70,4 +66,13 @@ export async function loginStaff({ email, password }) {
     },
     staff: formatStaff(staff),
   };
+}
+
+// Sign out a staff member by revoking their session server-side.
+export async function logoutStaff(accessToken) {
+  // Revoke the specific session identified by the token that was presented.
+  // Using admin.signOut with the user id would invalidate all sessions; we
+  // only revoke the current one so other devices stay signed in.
+  const { error } = await supabase.auth.admin.signOut(accessToken, "local");
+  if (error) throw error;
 }

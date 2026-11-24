@@ -1,11 +1,6 @@
 import { supabase } from "../config/supabase.js";
-
-function createAuthError(statusCode, code, message) {
-  const error = new Error(message);
-  error.statusCode = statusCode;
-  error.code = code;
-  return error;
-}
+import { createAuthError } from "../lib/errors.js";
+import { getActiveStaffProfile } from "../modules/auth/auth.service.js";
 
 // Validate a Supabase access token and attach its active staff profile to req.auth.
 export async function authenticate(req, _res, next) {
@@ -34,29 +29,7 @@ export async function authenticate(req, _res, next) {
       );
     }
 
-    const { data: profile, error: profileError } = await supabase
-      .from("staff_profiles")
-      .select("id,full_name,role,is_active")
-      .eq("id", userData.user.id)
-      .maybeSingle();
-
-    if (profileError) throw profileError;
-
-    if (!profile) {
-      throw createAuthError(
-        403,
-        "STAFF_PROFILE_NOT_FOUND",
-        "This account is not assigned to a staff profile."
-      );
-    }
-
-    if (!profile.is_active) {
-      throw createAuthError(
-        403,
-        "STAFF_ACCOUNT_INACTIVE",
-        "This staff account is inactive."
-      );
-    }
+    const profile = await getActiveStaffProfile(userData.user.id);
 
     req.auth = {
       accessToken,

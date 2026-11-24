@@ -3,7 +3,7 @@ import "dotenv/config";
 const supabaseServerKey =
   process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-const requiredVariables = ["SUPABASE_URL"];
+const requiredVariables = ["SUPABASE_URL", "SUPABASE_ANON_KEY"];
 
 const missingVariables = requiredVariables.filter(
   (name) => !process.env[name] || process.env[name].trim() === ""
