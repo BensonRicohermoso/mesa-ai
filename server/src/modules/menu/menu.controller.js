@@ -21,9 +21,10 @@ import {
 
 // ── Categories ───────────────────────────────────────────────────────────────
 
-export async function getCategories(_req, res, next) {
+export async function getCategories(req, res, next) {
   try {
-    res.json({ categories: await getAllCategories() });
+    const includeInactive = req.query.includeInactive === "true";
+    res.json({ categories: await getAllCategories({ includeInactive }) });
   } catch (error) {
     next(error);
   }

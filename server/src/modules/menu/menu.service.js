@@ -39,14 +39,18 @@ function formatMenuItem(row) {
 
 // ── Categories ───────────────────────────────────────────────────────────────
 
-export async function getAllCategories() {
-  // Load active categories with a count of linked menu items.
-  const { data, error } = await supabase
+export async function getAllCategories({ includeInactive = false } = {}) {
+  // Load categories with a count of linked menu items.
+  let query = supabase
     .from("menu_categories")
     .select("id,name,sort_order,is_active,created_at,updated_at,menu_items(count)")
-    .eq("is_active", true)
     .order("sort_order", { ascending: true });
 
+  if (!includeInactive) {
+    query = query.eq("is_active", true);
+  }
+
+  const { data, error } = await query;
   if (error) throw error;
 
   return (data || []).map((row) => ({
@@ -196,6 +200,18 @@ export async function updateCategory(id, { name, sortOrder, isActive }) {
 }
 
 export async function setCategoryStatus(id, isActive) {
+  // When deactivating a category, also deactivate all its active items
+  // to prevent orphaned active items in an inactive category.
+  if (!isActive) {
+    const { error: itemsError } = await supabase
+      .from("menu_items")
+      .update({ is_active: false })
+      .eq("category_id", id)
+      .eq("is_active", true);
+
+    if (itemsError) throw itemsError;
+  }
+
   const { data, error } = await supabase
     .from("menu_categories")
     .update({ is_active: isActive })

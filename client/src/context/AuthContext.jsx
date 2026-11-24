@@ -164,12 +164,17 @@ export function AuthProvider({
   }, [session?.accessToken])
 
   // Quick PIN-based Staff Switching (POS Mode)
+  // The backend now returns a fresh accessToken + refreshToken for the target user,
+  // so the Bearer token matches the switched-to user's RBAC role.
   const switchStaff = useCallback(async (pin, staffId = null) => {
     const result = await apiSwitchStaffByPin(pin, staffId)
     setSession((current) => {
       if (!current) return current
       const updated = {
         ...current,
+        accessToken: result.accessToken || current.accessToken,
+        refreshToken: result.refreshToken || current.refreshToken,
+        expiresAt: result.expiresAt || current.expiresAt,
         staff: result.staff,
         user: result.user || current.user,
       }

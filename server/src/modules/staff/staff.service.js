@@ -218,6 +218,7 @@ export async function provisionStaff({
       full_name: fullName,
       role,
       is_active: isActive,
+      pin_code: pinCode || null,
     })
     .select(STAFF_SELECT)
     .single();
@@ -247,6 +248,11 @@ export async function updateStaff(id, updates) {
   if (updates.fullName !== undefined) profileUpdates.full_name = updates.fullName;
   if (updates.role !== undefined) profileUpdates.role = updates.role;
   if (updates.isActive !== undefined) profileUpdates.is_active = updates.isActive;
+
+  // Sync pin_code to staff_profiles when updating
+  if (updates.pinCode !== undefined) {
+    profileUpdates.pin_code = updates.pinCode;
+  }
 
   let updatedProfile = current;
   if (Object.keys(profileUpdates).length > 0) {

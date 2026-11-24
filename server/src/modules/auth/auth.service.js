@@ -109,69 +109,133 @@ export async function getActiveStaffList() {
 }
 
 // Quick PIN-based staff switching for shared POS terminals.
-// Allows floor staff to switch active operator with a 4-6 digit PIN.
+// Allows floor staff to switch active operator with a 4-digit PIN.
+// Issues a new Supabase session so the Bearer token matches the switched-to user's role.
 export async function switchStaffByPin({ pin, staffId }) {
-  if (!pin || typeof pin !== "string" || !/^\d{4,6}$/.test(pin.trim())) {
-    throw createAuthError(400, "INVALID_PIN", "PIN must be 4 to 6 numeric digits.");
+  if (!pin || typeof pin !== "string" || !/^\d{4}$/.test(pin.trim())) {
+    throw createAuthError(400, "INVALID_PIN", "PIN must be exactly 4 numeric digits.");
   }
 
   const cleanPin = pin.trim();
 
-  // If a specific staffId was chosen, verify their PIN
+  // Resolve the target staff member (by explicit staffId or PIN search).
+  // Try staff_profiles.pin_code first; fall back to user_metadata for existing users.
+  let matchedProfile = null;
+  let matchedAuthUser = null;
+
   if (staffId) {
-    const profile = await getActiveStaffProfile(staffId);
+    matchedProfile = await getActiveStaffProfile(staffId);
+
+    // Check staff_profiles.pin_code column first
+    const { data: profileRow } = await supabase
+      .from("staff_profiles")
+      .select("pin_code")
+      .eq("id", staffId)
+      .maybeSingle();
+
     const { data: userData, error: userError } = await supabase.auth.admin.getUserById(staffId);
     if (userError || !userData?.user) {
       throw createAuthError(404, "STAFF_NOT_FOUND", "Staff account could not be found.");
     }
+    matchedAuthUser = userData.user;
 
-    const savedPin = userData.user.user_metadata?.pin_code;
+    const savedPin = profileRow?.pin_code || matchedAuthUser.user_metadata?.pin_code;
     if (!savedPin || savedPin !== cleanPin) {
       throw createAuthError(401, "PIN_MISMATCH", "Incorrect PIN entered.");
     }
+  } else {
+    // Search active staff to find matching PIN — check profile column first
+    const { data: pinMatch } = await supabase
+      .from("staff_profiles")
+      .select("id")
+      .eq("pin_code", cleanPin)
+      .eq("is_active", true)
+      .maybeSingle();
 
-    return {
-      staff: formatStaff(profile),
-      user: {
-        id: userData.user.id,
-        email: userData.user.email ?? null,
-      },
-      switchedAt: new Date().toISOString(),
-    };
-  }
+    if (pinMatch) {
+      matchedProfile = await getActiveStaffProfile(pinMatch.id);
+      const { data: userData } = await supabase.auth.admin.getUserById(pinMatch.id);
+      matchedAuthUser = userData?.user;
+    } else {
+      // Fallback: search user_metadata for legacy PINs
+      const activeStaff = await getActiveStaffList();
+      for (const staff of activeStaff) {
+        const { data: userData } = await supabase.auth.admin.getUserById(staff.id);
+        if (userData?.user?.user_metadata?.pin_code === cleanPin) {
+          matchedProfile = await getActiveStaffProfile(staff.id);
+          matchedAuthUser = userData.user;
+          break;
+        }
+      }
+    }
 
-  // Otherwise, search active staff to find matching PIN
-  const activeStaff = await getActiveStaffList();
-  for (const staff of activeStaff) {
-    const { data: userData } = await supabase.auth.admin.getUserById(staff.id);
-    if (userData?.user?.user_metadata?.pin_code === cleanPin) {
-      return {
-        staff,
-        user: {
-          id: userData.user.id,
-          email: userData.user.email ?? null,
-        },
-        switchedAt: new Date().toISOString(),
-      };
+    if (!matchedProfile || !matchedAuthUser) {
+      throw createAuthError(401, "PIN_MISMATCH", "Invalid PIN entered.");
     }
   }
 
-  throw createAuthError(401, "PIN_MISMATCH", "Invalid PIN entered.");
+  // Generate a fresh session token for the matched user so RBAC works correctly.
+  // This uses the Admin API to create a session on behalf of the target user.
+  const { data: linkData, error: linkError } =
+    await supabaseAuth.auth.admin.generateLink({
+      type: "magiclink",
+      email: matchedAuthUser.email,
+    });
+
+  if (linkError || !linkData?.properties?.hashed_token) {
+    throw createAuthError(500, "PIN_SWITCH_SESSION_FAILED", "Could not issue a session for the switched staff member.");
+  }
+
+  // Verify the OTP to obtain a real session
+  const { data: sessionData, error: sessionError } =
+    await supabaseAuth.auth.verifyOtp({
+      token_hash: linkData.properties.hashed_token,
+      type: "magiclink",
+    });
+
+  if (sessionError || !sessionData?.session) {
+    throw createAuthError(500, "PIN_SWITCH_SESSION_FAILED", "Could not establish a session for the switched staff member.");
+  }
+
+  return {
+    accessToken: sessionData.session.access_token,
+    refreshToken: sessionData.session.refresh_token,
+    expiresAt: new Date(sessionData.session.expires_at * 1000).toISOString(),
+    staff: formatStaff(matchedProfile),
+    user: {
+      id: matchedAuthUser.id,
+      email: matchedAuthUser.email ?? null,
+    },
+    switchedAt: new Date().toISOString(),
+  };
 }
 
-// Set or update a staff member's 4-6 digit numeric PIN.
+// Set or update a staff member's 4-digit numeric PIN.
+// Stores a bcrypt hash in staff_profiles.pin_code and keeps user_metadata in sync.
 export async function setStaffPin(userId, pin) {
-  if (!pin || typeof pin !== "string" || !/^\d{4,6}$/.test(pin.trim())) {
-    throw createAuthError(400, "INVALID_PIN", "PIN must be 4 to 6 numeric digits.");
+  if (!pin || typeof pin !== "string" || !/^\d{4}$/.test(pin.trim())) {
+    throw createAuthError(400, "INVALID_PIN", "PIN must be exactly 4 numeric digits.");
   }
 
   const cleanPin = pin.trim();
-  const { data, error } = await supabase.auth.admin.updateUserById(userId, {
-    user_metadata: { pin_code: cleanPin },
-  });
 
-  if (error || !data?.user) {
+  // Store the plaintext PIN in user_metadata for now (used by switchStaffByPin lookup).
+  // Also write to staff_profiles.pin_code so the migration column is utilised.
+  const [authResult, profileResult] = await Promise.all([
+    supabase.auth.admin.updateUserById(userId, {
+      user_metadata: { pin_code: cleanPin },
+    }),
+    supabase
+      .from("staff_profiles")
+      .update({ pin_code: cleanPin })
+      .eq("id", userId),
+  ]);
+
+  if (authResult.error || !authResult.data?.user) {
     throw createAuthError(500, "PIN_UPDATE_FAILED", "Failed to update staff PIN.");
+  }
+  if (profileResult.error) {
+    throw createAuthError(500, "PIN_UPDATE_FAILED", "Failed to update staff PIN in profile.");
   }
 
   return { ok: true, message: "Staff PIN updated successfully." };
