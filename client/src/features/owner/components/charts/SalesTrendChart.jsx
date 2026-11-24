@@ -61,12 +61,12 @@ export function SalesTrendChart({ data, showComparison }) {
           <CartesianGrid stroke="var(--chart-grid, rgba(255,255,255,0.08))" strokeDasharray="3 3" />
           <XAxis
             dataKey="name"
-            tick={{ fill: 'var(--chart-ink-muted, #858585)', fontSize: 11, fontFamily: 'var(--font-sans)' }}
+            tick={{ fill: 'var(--chart-ink-muted, #858585)', fontSize: 12, fontFamily: 'var(--font-sans)' }}
             axisLine={{ stroke: 'var(--chart-axis, rgba(255,255,255,0.12))' }}
             tickLine={false}
           />
           <YAxis
-            tick={{ fill: 'var(--chart-ink-muted, #858585)', fontSize: 11, fontFamily: 'var(--font-sans)' }}
+            tick={{ fill: 'var(--chart-ink-muted, #858585)', fontSize: 12, fontFamily: 'var(--font-sans)' }}
             axisLine={false}
             tickLine={false}
             tickFormatter={formatYAxisPhp}

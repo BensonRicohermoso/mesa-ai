@@ -125,21 +125,21 @@ export function MenuEngineeringScatter({ items, benchmarks, selectedItemId, onIt
             dataKey="unitsSold"
             name="Units Sold"
             allowDecimals={false}
-            tick={{ fill: 'var(--chart-ink-muted, #858585)', fontSize: 11, fontFamily: 'var(--font-sans)' }}
+            tick={{ fill: 'var(--chart-ink-muted, #858585)', fontSize: 12, fontFamily: 'var(--font-sans)' }}
             axisLine={{ stroke: 'var(--chart-axis, rgba(255,255,255,0.12))' }}
             tickLine={false}
-            label={{ value: 'Popularity (Units Sold)', position: 'insideBottom', offset: -14, fill: 'var(--chart-ink-muted, #858585)', fontSize: 10, fontFamily: 'var(--font-sans)' }}
+            label={{ value: 'Popularity (Units Sold)', position: 'insideBottom', offset: -14, fill: 'var(--chart-ink-muted, #858585)', fontSize: 11, fontFamily: 'var(--font-sans)' }}
           />
           <YAxis
             type="number"
             dataKey="unitGrossProfit"
             name="Unit Gross Profit"
             domain={hasNegativeProfit ? ['auto', 'auto'] : [0, 'auto']}
-            tick={{ fill: 'var(--chart-ink-muted, #858585)', fontSize: 11, fontFamily: 'var(--font-sans)' }}
+            tick={{ fill: 'var(--chart-ink-muted, #858585)', fontSize: 12, fontFamily: 'var(--font-sans)' }}
             axisLine={false}
             tickLine={false}
             tickFormatter={(v) => `₱${v}`}
-            label={{ value: 'Unit Gross Profit (₱)', angle: -90, position: 'insideLeft', dx: -4, style: { textAnchor: 'middle' }, fill: 'var(--chart-ink-muted, #858585)', fontSize: 10, fontFamily: 'var(--font-sans)' }}
+            label={{ value: 'Unit Gross Profit (₱)', angle: -90, position: 'insideLeft', dx: -4, style: { textAnchor: 'middle' }, fill: 'var(--chart-ink-muted, #858585)', fontSize: 11, fontFamily: 'var(--font-sans)' }}
           />
           <Tooltip content={<ScatterTooltip />} />
 

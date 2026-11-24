@@ -41,11 +41,11 @@
   background: none;
   border: none;
   border-bottom: 2px solid transparent;
-  padding: 0.85rem 1.35rem;
+  padding: 0.9rem 1.35rem;
   font-family: var(--font-sans);
-  font-size: 0.7rem;
+  font-size: 0.78rem;
   font-weight: 600;
-  letter-spacing: 0.18em;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--muted-gray);
   cursor: pointer;
@@ -1079,20 +1079,37 @@ select.form-input option {
 
 .owner-station-meta {
   font-family: var(--font-sans);
-  font-size: 0.65rem;
+  font-size: 0.76rem;
   font-weight: 500;
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--muted-gray);
 }
 
+.owner-station-strip .quiet-link {
+  font-size: 0.75rem;
+}
+
 /* ── Analytics Toolbar ─────────────────────────────────────────────────── */
 
 .analytics-toolbar {
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.75rem;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.9rem;
+}
+
+.analytics-toolbar .segment-btn,
+.analytics-sub-tabs .segment-btn,
+.dashboard-chart-section .segment-btn {
+  padding: 0.5rem 1.1rem;
+  font-size: 0.74rem;
+}
+
+.analytics-toolbar .action-pill--small,
+.pagination-controls .action-pill--small {
+  padding: 0.45rem 0.95rem;
+  font-size: 0.72rem;
 }
 
 .analytics-toolbar-row {
@@ -1106,7 +1123,7 @@ select.form-input option {
 .analytics-toolbar-actions {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: 0.75rem;
 }
 
 .analytics-toolbar-filters {
@@ -1116,10 +1133,10 @@ select.form-input option {
 }
 
 .analytics-filter-select {
-  min-width: 150px;
-  max-width: 200px;
-  font-size: 0.78rem;
-  padding: 0.45rem 0.7rem;
+  min-width: 175px;
+  max-width: 230px;
+  font-size: 0.86rem;
+  padding: 0.55rem 0.85rem;
 }
 
 .analytics-date-inputs-wrap {
@@ -1138,39 +1155,40 @@ select.form-input option {
 .analytics-date-error {
   margin: 0;
   font-family: var(--font-sans);
-  font-size: 0.72rem;
+  font-size: 0.82rem;
   color: #ff9999;
 }
 
 .analytics-date-inputs .form-label {
   display: flex;
   flex-direction: column;
-  gap: 0.3rem;
+  gap: 0.35rem;
+  font-size: 0.7rem;
 }
 
 .analytics-date-inputs .form-input {
-  max-width: 165px;
-  font-size: 0.8rem;
-  padding: 0.4rem 0.6rem;
+  max-width: 180px;
+  font-size: 0.86rem;
+  padding: 0.5rem 0.75rem;
   color-scheme: dark;
 }
 
 .analytics-compare-toggle {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.5rem;
   cursor: pointer;
 }
 
 .analytics-compare-toggle input[type="checkbox"] {
   accent-color: var(--white);
-  width: 14px;
-  height: 14px;
+  width: 16px;
+  height: 16px;
 }
 
 .analytics-compare-label {
   font-family: var(--font-sans);
-  font-size: 0.65rem;
+  font-size: 0.76rem;
   font-weight: 600;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -1184,12 +1202,12 @@ select.form-input option {
 
 .preview-banner {
   font-family: var(--font-sans);
-  font-size: 0.72rem;
+  font-size: 0.82rem;
   font-weight: 600;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
   color: var(--black);
   background: var(--white);
-  padding: 0.55rem 1rem;
+  padding: 0.65rem 1.1rem;
   text-align: center;
 }
 
@@ -1201,44 +1219,48 @@ select.form-input option {
   gap: 1px;
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.12);
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.75rem;
 }
 
 .kpi-grid--compact {
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
 }
 
 .kpi-cell {
   background: #0a0a0a;
-  padding: 1.2rem 1.4rem;
+  padding: 1.35rem 1.5rem;
   display: flex;
   flex-direction: column;
-  gap: 0.3rem;
+  gap: 0.35rem;
 }
 
 .kpi-label {
   font-family: var(--font-sans);
-  font-size: 0.6rem;
+  font-size: 0.72rem;
   font-weight: 600;
-  letter-spacing: 0.2em;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--muted-gray);
 }
 
 .kpi-value {
   font-family: var(--font-serif);
-  font-size: 1.5rem;
+  font-size: 1.85rem;
   font-weight: 400;
   letter-spacing: -0.02em;
   color: var(--white);
   line-height: 1.1;
 }
 
+.kpi-grid--compact .kpi-value {
+  font-size: 1.65rem;
+}
+
 .kpi-delta {
   font-family: var(--font-sans);
-  font-size: 0.72rem;
+  font-size: 0.82rem;
   font-weight: 600;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.05em;
 }
 
 .kpi-delta--up {
@@ -1251,7 +1273,7 @@ select.form-input option {
 
 .kpi-secondary {
   font-family: var(--font-sans);
-  font-size: 0.68rem;
+  font-size: 0.78rem;
   color: var(--muted-gray);
   font-weight: 400;
 }
@@ -1262,7 +1284,7 @@ select.form-input option {
   display: grid;
   grid-template-columns: 1.35fr 1fr;
   gap: 1.5rem;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.75rem;
 }
 
 .dashboard-chart-section {
@@ -1274,18 +1296,18 @@ select.form-input option {
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.85rem;
   flex-wrap: wrap;
 }
 
 .dashboard-section-title {
   font-family: var(--font-sans);
-  font-size: 0.62rem;
+  font-size: 0.74rem;
   font-weight: 600;
-  letter-spacing: 0.22em;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
   color: var(--muted-gray);
-  margin: 0 0 0.75rem;
+  margin: 0 0 0.85rem;
 }
 
 .dashboard-section-header .dashboard-section-title {
@@ -1298,29 +1320,29 @@ select.form-input option {
   min-width: 0;
   border: 1px solid rgba(255, 255, 255, 0.1);
   background: #0a0a0a;
-  padding: 0.75rem 0.5rem 0.5rem;
+  padding: 0.85rem 0.65rem 0.65rem;
 }
 
 .chart-tooltip {
   background: #1a1a1a;
   border: 1px solid rgba(255, 255, 255, 0.2);
-  padding: 0.65rem 0.85rem;
+  padding: 0.75rem 0.95rem;
   font-family: var(--font-sans);
-  font-size: 0.75rem;
+  font-size: 0.84rem;
   color: var(--white);
-  line-height: 1.6;
+  line-height: 1.65;
 }
 
 .chart-tooltip-label {
-  font-size: 0.8rem;
+  font-size: 0.9rem;
   display: block;
-  margin-bottom: 0.25rem;
+  margin-bottom: 0.3rem;
   letter-spacing: -0.01em;
 }
 
 .chart-tooltip-row {
   color: #cccccc;
-  font-size: 0.72rem;
+  font-size: 0.8rem;
 }
 
 /* ── Dashboard Bottom Grid ─────────────────────────────────────────────── */
@@ -1329,42 +1351,55 @@ select.form-input option {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 1.5rem;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.75rem;
 }
 
 .dashboard-bottom-section {
   min-width: 0;
 }
 
+.owner-dashboard .editorial-table th,
+.analytics-reports .editorial-table th {
+  font-size: 0.72rem;
+  letter-spacing: 0.16em;
+  padding: 0.95rem 1.1rem;
+}
+
+.owner-dashboard .editorial-table td,
+.analytics-reports .editorial-table td {
+  font-size: 0.92rem;
+  padding: 1rem 1.1rem;
+}
+
 .top-item-name {
   display: block;
   font-family: var(--font-serif);
-  font-size: 1rem;
+  font-size: 1.12rem;
   font-weight: 400;
   letter-spacing: -0.01em;
-  line-height: 1.2;
+  line-height: 1.25;
 }
 
 .top-item-category {
   display: block;
   font-family: var(--font-sans);
-  font-size: 0.6rem;
+  font-size: 0.7rem;
   font-weight: 600;
-  letter-spacing: 0.15em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--muted-gray);
-  margin-top: 0.15rem;
+  margin-top: 0.2rem;
 }
 
 /* ── Order Status Badges ───────────────────────────────────────────────── */
 
 .order-status-badge {
   font-family: var(--font-sans);
-  font-size: 0.6rem;
+  font-size: 0.68rem;
   font-weight: 700;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  padding: 0.2rem 0.6rem;
+  padding: 0.25rem 0.65rem;
   border: 1px solid rgba(255, 255, 255, 0.2);
   display: inline-block;
 }
@@ -1399,14 +1434,14 @@ select.form-input option {
 
 .order-ref-cell {
   font-family: var(--font-sans);
-  font-size: 0.72rem;
+  font-size: 0.82rem;
   font-weight: 600;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.05em;
   color: #cccccc;
 }
 
 .order-time-cell {
-  font-size: 0.72rem;
+  font-size: 0.82rem;
   color: var(--muted-gray);
   white-space: nowrap;
 }
@@ -1415,7 +1450,7 @@ select.form-input option {
 
 .dashboard-cta {
   text-align: center;
-  padding: 1rem 0 0.5rem;
+  padding: 1.15rem 0 0.5rem;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
@@ -1423,13 +1458,19 @@ select.form-input option {
 
 .dashboard-error-state,
 .dashboard-empty-state {
-  padding: 2rem 0;
+  padding: 2.25rem 0;
   text-align: center;
+}
+
+.dashboard-error-state .mgmt-error {
+  font-size: 0.92rem;
+  padding: 0.85rem 1.25rem;
 }
 
 .dashboard-error-state .owner-subtitle,
 .dashboard-empty-state .owner-subtitle {
   margin: 0 auto 1.5rem;
+  font-size: 0.95rem;
 }
 
 .dashboard-error-actions {
@@ -1452,7 +1493,7 @@ select.form-input option {
 
 .dashboard-empty-state h2 {
   font-family: var(--font-serif);
-  font-size: 1.6rem;
+  font-size: 1.8rem;
   font-weight: 300;
   margin: 0 0 0.5rem;
 }
@@ -1520,9 +1561,9 @@ select.form-input option {
 .quadrant-pill {
   background: transparent;
   border: 1px solid rgba(255, 255, 255, 0.2);
-  padding: 0.35rem 0.85rem;
+  padding: 0.45rem 0.95rem;
   font-family: var(--font-sans);
-  font-size: 0.65rem;
+  font-size: 0.74rem;
   font-weight: 600;
   letter-spacing: 0.1em;
   text-transform: uppercase;
