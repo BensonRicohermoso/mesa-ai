@@ -46,8 +46,8 @@ MESA-AI currently has the repository structure, Supabase setup, seven applied da
 - [x] Add `POST /api/auth/login` for staff sign-in and `GET /api/auth/me` for current-user lookup.
 - [x] Add Bearer-token authentication middleware that loads the linked active `staff_profiles` record.
 - [x] Add reusable role guards for `admin`, `cashier`, and `kitchen`.
-- [ ] Build the staff login UI and protected client routes.
-- [ ] Apply the role guards to every staff-only feature route as those modules are implemented.
+- [x] Build the staff login UI and protected client routes.
+- [x] Apply the role guard to the current staff-only route; future staff modules must add their role policy as they are implemented.
 - [ ] Verify live sign-in and authorization paths with configured Supabase credentials.
 
 ### Management pages and APIs — Not started

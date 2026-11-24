@@ -1,0 +1,3 @@
+export function OwnerHome({ session, onSignOut }) {
+  return <main className="owner-shell"><section className="owner-card"><p className="owner-eyebrow">Owner workspace</p><h1>Hello, {session.staff.fullName}.</h1><p>Your account is verified. The dashboard, management, and AI tools will appear here as their feature branches are completed.</p><div className="owner-session" aria-label="Current session details"><div><span>Signed in as</span><strong>{session.user.email || 'Staff account'}</strong></div><div><span>Role</span><strong>{session.staff.role}</strong></div></div><button className="quiet-button" type="button" onClick={onSignOut}>Sign out</button></section></main>
+}
