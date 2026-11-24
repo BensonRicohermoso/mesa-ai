@@ -9,3 +9,4 @@ logs
 .DS_Store
 .vscode/*
 !.vscode/settings.json
+DEV2_TASKS.md
