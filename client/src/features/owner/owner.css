@@ -841,3 +841,76 @@ select.form-input {
     box-shadow: none !important;
   }
 }
+
+/* ── Staff Management ───────────────────────────────────────────────────── */
+
+.staff-mgmt {
+  margin-top: 0.5rem;
+}
+
+.role-filter-select {
+  min-width: 130px;
+  cursor: pointer;
+}
+
+.staff-name-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.staff-self-tag {
+  font-family: var(--font-sans);
+  font-size: 0.56rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted-gray);
+  border: 1px solid var(--light-gray);
+  padding: 0.14rem 0.45rem;
+}
+
+.staff-email-text {
+  font-size: 0.8rem;
+  color: var(--muted-gray);
+}
+
+.staff-pin-status {
+  font-family: var(--font-sans);
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  color: var(--muted-gray);
+}
+
+.staff-pin-status--set {
+  color: var(--black);
+  font-weight: 600;
+}
+
+.staff-status-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.35rem;
+}
+
+.staff-protected-note {
+  font-family: var(--font-sans);
+  font-size: 0.58rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted-gray);
+}
+
+.form-hint {
+  font-family: var(--font-sans);
+  font-size: 0.72rem;
+  color: var(--muted-gray);
+  margin: 0.35rem 0 0;
+}
+
+.staff-pin-row {
+  margin-top: 0.4rem;
+}

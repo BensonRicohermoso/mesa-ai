@@ -3,12 +3,14 @@ import { useAuth } from '../../context/useAuth.js'
 import { PinPadModal } from '../auth/PinPadModal.jsx'
 import { MenuManagement } from './components/MenuManagement.jsx'
 import { TableManagement } from './components/TableManagement.jsx'
+import { StaffManagement } from './components/StaffManagement.jsx'
 import './owner.css'
 
 const TABS = [
   { key: 'overview', label: '01 · Overview' },
   { key: 'menu', label: '02 · Menu Atelier' },
   { key: 'tables', label: '03 · Table Suite' },
+  { key: 'staff', label: '04 · Staff Roster' },
 ]
 
 export function OwnerHome() {
@@ -160,6 +162,7 @@ export function OwnerHome() {
 
           {activeTab === 'menu' && <MenuManagement />}
           {activeTab === 'tables' && <TableManagement />}
+          {activeTab === 'staff' && <StaffManagement />}
         </section>
       </div>
 
