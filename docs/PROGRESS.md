@@ -16,7 +16,7 @@ MESA-AI currently has the repository structure, Supabase setup, seven applied da
 | Kitchen Display | Not started |
 | Order tracking | Not started |
 | Analytics functions | Not started |
-| Auth and management (Dev 2) | In progress (Auth & RBAC complete) |
+| Auth and management (Dev 2) | In progress |
 | Dashboard and AI (Dev 2) | Not started |
 | QA and seed scenarios (Member 3) | In progress |
 | Deployment | Not started |
@@ -40,7 +40,7 @@ MESA-AI currently has the repository structure, Supabase setup, seven applied da
 
 ## Developer 2 Checklist — Management, Dashboard & AI
 
-### Authentication and role permissions — Done
+### Authentication and role permissions — In progress
 
 - [x] Define the Supabase Auth login and session flow.
 - [x] Add `POST /api/auth/login` for staff sign-in and `GET /api/auth/me` for current-user lookup.
@@ -49,6 +49,7 @@ MESA-AI currently has the repository structure, Supabase setup, seven applied da
 - [x] Build the staff login UI and protected client routes.
 - [x] Apply the role guard to the current staff-only route; future staff modules must add their role policy as they are implemented.
 - [x] Verify live sign-in and authorization paths with configured Supabase credentials.
+- [ ] UI finalization (in progress).
 
 ### Management pages and APIs — Not started
 
