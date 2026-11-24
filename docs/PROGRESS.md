@@ -51,9 +51,9 @@ MESA-AI currently has the repository structure, Supabase setup, seven applied da
 - [x] Verify live sign-in and authorization paths with configured Supabase credentials.
 - [ ] UI finalization (in progress).
 
-### Management pages and APIs — Not started
+### Management pages and APIs — In progress
 
-- [ ] Menu management: category and item CRUD, availability toggles, soft deactivation, and admin UI.
+- [x] Menu management: category and item CRUD, availability toggles, soft deactivation, and admin UI.
 - [ ] Table management: table CRUD, active state, customer QR URLs, and print-friendly QR output.
 - [ ] Staff management: provision users, assign roles, activate/deactivate accounts, and prevent removal of the last active admin.
 
@@ -74,7 +74,7 @@ MESA-AI currently has the repository structure, Supabase setup, seven applied da
 ### Dev 2 Branch Plan
 
 - [x] `feature/dev2-auth-rbac`
-- [ ] `feature/dev2-menu-management`
+- [x] `feature/dev2-menu-management`
 - [ ] `feature/dev2-table-management`
 - [ ] `feature/dev2-staff-management`
 - [ ] `feature/dev2-owner-dashboard`
