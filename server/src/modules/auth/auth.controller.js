@@ -1,4 +1,11 @@
-import { loginStaff, logoutStaff, refreshStaffSession } from "./auth.service.js";
+import {
+  getActiveStaffList,
+  loginStaff,
+  logoutStaff,
+  refreshStaffSession,
+  setStaffPin,
+  switchStaffByPin,
+} from "./auth.service.js";
 import { createAuthError } from "../../lib/errors.js";
 
 // Basic email format validation — catches obvious typos before hitting Supabase.
@@ -55,6 +62,37 @@ export async function postLogout(req, res, next) {
   try {
     await logoutStaff(req.auth.accessToken);
     res.json({ ok: true });
+  } catch (error) {
+    next(error);
+  }
+}
+
+// Return active staff list for terminal staff selector.
+export async function getStaffList(_req, res, next) {
+  try {
+    res.json(await getActiveStaffList());
+  } catch (error) {
+    next(error);
+  }
+}
+
+// Fast switch active staff on terminal using a 4-6 digit PIN.
+export async function postPinSwitch(req, res, next) {
+  try {
+    const { pin, staffId } = req.body || {};
+    const result = await switchStaffByPin({ pin, staffId });
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+}
+
+// Update the current staff member's quick-switch PIN.
+export async function postSetPin(req, res, next) {
+  try {
+    const { pin } = req.body || {};
+    const result = await setStaffPin(req.auth.user.id, pin);
+    res.json(result);
   } catch (error) {
     next(error);
   }

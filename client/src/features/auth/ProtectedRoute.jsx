@@ -1,14 +1,14 @@
 import PropTypes from 'prop-types'
+import { useAuth } from '../../context/useAuth.js'
 
 export function ProtectedRoute({
   allowedRoles,
   children,
-  isVerifying,
-  onGoToLogin,
-  onSignOut,
-  session,
   workspaceName,
+  onGoToLogin,
 }) {
+  const { session, isVerifying, logout } = useAuth()
+
   if (isVerifying) {
     return (
       <main className="access-shell">
@@ -46,7 +46,7 @@ export function ProtectedRoute({
             You are signed in as {session.staff.fullName}. Ask an administrator
             if you need access to the {label.toLowerCase()} workspace.
           </p>
-          <button className="quiet-button" type="button" onClick={onSignOut}>
+          <button className="quiet-button" type="button" onClick={logout}>
             Sign out
           </button>
         </section>
@@ -58,23 +58,8 @@ export function ProtectedRoute({
 }
 
 ProtectedRoute.propTypes = {
-  /** Roles allowed to view the wrapped content. */
   allowedRoles: PropTypes.arrayOf(PropTypes.string).isRequired,
   children: PropTypes.node.isRequired,
-  /** True while the stored token is being verified against the API. */
-  isVerifying: PropTypes.bool.isRequired,
-  /** Navigate to the login page. */
-  onGoToLogin: PropTypes.func.isRequired,
-  /** Sign the current user out. */
-  onSignOut: PropTypes.func.isRequired,
-  /** Active session, or null when unauthenticated. */
-  session: PropTypes.shape({
-    accessToken: PropTypes.string.isRequired,
-    staff: PropTypes.shape({
-      fullName: PropTypes.string.isRequired,
-      role: PropTypes.string.isRequired,
-    }).isRequired,
-  }),
-  /** Human-readable workspace name used in access-denied messages. */
   workspaceName: PropTypes.string,
+  onGoToLogin: PropTypes.func,
 }

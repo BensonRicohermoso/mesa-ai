@@ -52,3 +52,253 @@ button { cursor: pointer; }
 .owner-session span { margin-bottom: 0.25rem; color: var(--ink-soft); font-size: 0.75rem; }
 .owner-session strong { color: var(--ink); }
 @media (max-width: 760px) { .auth-shell { grid-template-columns: 1fr; } .auth-story { min-height: 18rem; padding: 1.5rem; } .story-copy { margin: 2.75rem 0 0; } .story-copy h1 { font-size: clamp(3.4rem, 17vw, 5rem); } .shift-note { display: none; } .auth-panel { padding: 2.5rem 1.5rem 3rem; } .owner-session { grid-template-columns: 1fr; } }
+
+/* ==================== POS MODE & QUICK PIN STYLES ==================== */
+
+.checkbox-field {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  font-size: 0.85rem;
+  color: var(--ink);
+  cursor: pointer;
+  user-select: none;
+}
+.checkbox-field input[type="checkbox"] {
+  width: 1.15rem;
+  height: 1.15rem;
+  accent-color: var(--mango);
+  cursor: pointer;
+}
+
+.owner-header-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.terminal-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.action-pill {
+  border: 1px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  padding: 0.4rem 0.8rem;
+  font-weight: 700;
+  font-size: 0.82rem;
+  border-radius: 0;
+  box-shadow: 2px 2px 0 var(--ink);
+  transition: all 0.15s ease;
+}
+.action-pill:hover {
+  background: var(--mango);
+}
+.lock-pill:hover {
+  background: var(--tomato);
+  color: var(--white);
+}
+
+.role-tag {
+  display: inline-block;
+  padding: 0.2rem 0.4rem;
+  background: var(--mango);
+  color: var(--ink);
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.pin-settings-box {
+  margin: 2rem 0;
+  padding: 1.5rem;
+  border: 1px dashed var(--line);
+  background: var(--paper);
+}
+.pin-settings-box h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1.1rem;
+  color: var(--ink);
+}
+.pin-inline-form {
+  display: flex;
+  gap: 0.5rem;
+  max-width: 20rem;
+}
+.pin-inline-form input {
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--line);
+  font-size: 1.1rem;
+  letter-spacing: 0.3em;
+  background: var(--white);
+}
+.pin-save-btn {
+  min-height: auto;
+  padding: 0.6rem 1rem;
+  white-space: nowrap;
+}
+.pin-feedback {
+  margin: 0.75rem 0 0;
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+  font-weight: 600;
+}
+
+/* Modal Overlay for PIN Pad */
+.pin-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 40, 43, 0.65);
+  backdrop-filter: blur(4px);
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  z-index: 1000;
+}
+.pin-card {
+  width: min(100%, 24rem);
+  background: var(--white);
+  border: 2px solid var(--ink);
+  box-shadow: 8px 8px 0 var(--ink);
+  padding: 2rem;
+  display: grid;
+  gap: 1.25rem;
+}
+.pin-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+.pin-header h2 {
+  margin: 0;
+  font-size: 1.8rem;
+  line-height: 1;
+}
+.pin-close {
+  font-size: 0.85rem;
+}
+
+/* Staff Chip Selection */
+.staff-selector {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding-bottom: 0.25rem;
+}
+.staff-chip {
+  flex: 1;
+  min-width: 5.5rem;
+  padding: 0.6rem 0.5rem;
+  border: 1px solid var(--line);
+  background: var(--paper);
+  text-align: center;
+  cursor: pointer;
+  display: grid;
+  gap: 0.2rem;
+}
+.staff-chip span {
+  font-size: 0.7rem;
+  color: var(--ink-soft);
+  text-transform: uppercase;
+}
+.staff-chip.active {
+  border-color: var(--ink);
+  background: var(--mango);
+  box-shadow: 2px 2px 0 var(--ink);
+}
+
+/* PIN Display Dots */
+.pin-display {
+  display: flex;
+  justify-content: center;
+  gap: 0.75rem;
+  margin: 0.5rem 0;
+}
+.pin-dot {
+  width: 1.1rem;
+  height: 1.1rem;
+  border-radius: 50%;
+  border: 2px solid var(--ink);
+  background: transparent;
+  transition: all 0.1s ease;
+}
+.pin-dot.filled {
+  background: var(--ink);
+  transform: scale(1.1);
+}
+
+/* POS Touch Keypad */
+.pin-keypad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.6rem;
+}
+.keypad-btn {
+  height: 3.8rem;
+  font-size: 1.5rem;
+  font-weight: 700;
+  border: 1px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: 2px 2px 0 var(--ink);
+  display: grid;
+  place-items: center;
+  transition: transform 0.05s ease, background 0.1s ease;
+}
+.keypad-btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: 0 0 0;
+  background: var(--mango);
+}
+.keypad-btn.action-btn {
+  font-size: 1rem;
+  color: var(--ink-soft);
+}
+
+.pin-submit-btn {
+  width: 100%;
+}
+
+/* Lock Screen */
+.lock-shell {
+  min-height: 100svh;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+  background: var(--ink);
+  color: var(--white);
+}
+.lock-card {
+  width: min(100%, 25rem);
+  background: var(--paper);
+  color: var(--ink);
+  border: 2px solid var(--white);
+  padding: 2.5rem 2rem;
+  box-shadow: 8px 8px 0 var(--mango);
+  display: grid;
+  gap: 1.25rem;
+}
+.lock-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--tomato);
+}
+.lock-card h1 {
+  margin: 0;
+  font-size: 2rem;
+  line-height: 1.1;
+  font-family: Georgia, serif;
+}
+.lock-footer {
+  text-align: center;
+  margin-top: 0.5rem;
+}
