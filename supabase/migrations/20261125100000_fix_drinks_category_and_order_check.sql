@@ -15,7 +15,22 @@ SET    is_active = true
 WHERE  name = 'Drinks'
   AND  is_active = false;
 
--- 2. Replace create_order to also check menu_categories.is_active
+-- 2. Backfill staff_profiles.pin_code from auth.users.raw_user_meta_data->>'pin_code'
+--    and remove plaintext pin_code from auth.users.raw_user_meta_data so it is not
+--    embedded inside Supabase JWT payloads.
+UPDATE public.staff_profiles sp
+SET    pin_code = u.raw_user_meta_data->>'pin_code'
+FROM   auth.users u
+WHERE  sp.id = u.id
+  AND  sp.pin_code IS NULL
+  AND  u.raw_user_meta_data ? 'pin_code'
+  AND  (u.raw_user_meta_data->>'pin_code') ~ '^\d{4}$';
+
+UPDATE auth.users
+SET    raw_user_meta_data = raw_user_meta_data - 'pin_code'
+WHERE  raw_user_meta_data ? 'pin_code';
+
+-- 3. Replace create_order to also check menu_categories.is_active
 CREATE OR REPLACE FUNCTION public.create_order(
   p_table_code text,
   p_idempotency_key text,

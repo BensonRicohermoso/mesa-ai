@@ -194,7 +194,7 @@ export async function switchStaffByPin(pin, staffId = null) {
   })
 }
 
-// Set or update current staff PIN (4 to 6 digits)
+// Set or update current staff PIN (4 digits)
 export async function setStaffPin(pin, accessToken) {
   return request('/auth/pin', {
     method: 'POST',

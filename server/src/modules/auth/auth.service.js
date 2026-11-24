@@ -108,6 +108,32 @@ export async function getActiveStaffList() {
   return (data || []).map(formatStaff);
 }
 
+/**
+ * Ensure no other active staff member is already using the given PIN.
+ */
+export async function assertPinAvailable(pin, excludeStaffId = null) {
+  let query = supabase
+    .from("staff_profiles")
+    .select("id")
+    .eq("pin_code", pin)
+    .eq("is_active", true);
+
+  if (excludeStaffId) {
+    query = query.neq("id", excludeStaffId);
+  }
+
+  const { data: conflict, error } = await query.maybeSingle();
+  if (error) throw error;
+
+  if (conflict) {
+    throw createAuthError(
+      409,
+      "PIN_ALREADY_IN_USE",
+      "This PIN is already assigned to another active staff member. Please choose a different PIN."
+    );
+  }
+}
+
 // Quick PIN-based staff switching for shared POS terminals.
 // Allows floor staff to switch active operator with a 4-digit PIN.
 // Issues a new Supabase session so the Bearer token matches the switched-to user's role.
@@ -118,20 +144,20 @@ export async function switchStaffByPin({ pin, staffId }) {
 
   const cleanPin = pin.trim();
 
-  // Resolve the target staff member (by explicit staffId or PIN search).
-  // Try staff_profiles.pin_code first; fall back to user_metadata for existing users.
+  // Resolve the target staff member via staff_profiles.pin_code (single DB query).
   let matchedProfile = null;
   let matchedAuthUser = null;
 
   if (staffId) {
     matchedProfile = await getActiveStaffProfile(staffId);
 
-    // Check staff_profiles.pin_code column first
-    const { data: profileRow } = await supabase
+    const { data: profileRow, error: pinLookupError } = await supabase
       .from("staff_profiles")
       .select("pin_code")
       .eq("id", staffId)
       .maybeSingle();
+
+    if (pinLookupError) throw pinLookupError;
 
     const { data: userData, error: userError } = await supabase.auth.admin.getUserById(staffId);
     if (userError || !userData?.user) {
@@ -139,42 +165,34 @@ export async function switchStaffByPin({ pin, staffId }) {
     }
     matchedAuthUser = userData.user;
 
-    const savedPin = profileRow?.pin_code || matchedAuthUser.user_metadata?.pin_code;
+    const savedPin = profileRow?.pin_code ?? matchedAuthUser.user_metadata?.pin_code;
     if (!savedPin || savedPin !== cleanPin) {
       throw createAuthError(401, "PIN_MISMATCH", "Incorrect PIN entered.");
     }
   } else {
-    // Search active staff to find matching PIN via indexed staff_profiles column
-    // (eliminates N+1 getUserById lookups over the entire staff roster).
-    const { data: pinMatches } = await supabase
+    const { data: pinMatches, error: pinSearchError } = await supabase
       .from("staff_profiles")
-      .select("id")
+      .select("id,full_name,role,is_active")
       .eq("pin_code", cleanPin)
       .eq("is_active", true);
 
-    if (pinMatches && pinMatches.length > 0) {
-      if (pinMatches.length > 1) {
-        // Duplicate PINs exist — refuse ambiguous match
-        throw createAuthError(
-          409,
-          "PIN_AMBIGUOUS",
-          "Multiple staff share this PIN. Please use the staff selector or contact an administrator."
-        );
+    if (pinSearchError) throw pinSearchError;
+
+    if (pinMatches && pinMatches.length > 1) {
+      throw createAuthError(
+        409,
+        "PIN_AMBIGUOUS",
+        "Multiple staff share this PIN. Please use the staff selector or contact an administrator."
+      );
+    }
+
+    if (pinMatches && pinMatches.length === 1) {
+      matchedProfile = pinMatches[0];
+      const { data: userData, error: userError } = await supabase.auth.admin.getUserById(matchedProfile.id);
+      if (userError || !userData?.user) {
+        throw createAuthError(404, "STAFF_NOT_FOUND", "Staff account could not be found.");
       }
-      matchedProfile = await getActiveStaffProfile(pinMatches[0].id);
-      const { data: userData } = await supabase.auth.admin.getUserById(pinMatches[0].id);
-      matchedAuthUser = userData?.user;
-    } else {
-      // Fallback: search user_metadata for legacy PINs not yet migrated
-      const activeStaff = await getActiveStaffList();
-      for (const staff of activeStaff) {
-        const { data: userData } = await supabase.auth.admin.getUserById(staff.id);
-        if (userData?.user?.user_metadata?.pin_code === cleanPin) {
-          matchedProfile = await getActiveStaffProfile(staff.id);
-          matchedAuthUser = userData.user;
-          break;
-        }
-      }
+      matchedAuthUser = userData.user;
     }
 
     if (!matchedProfile || !matchedAuthUser) {
@@ -183,9 +201,9 @@ export async function switchStaffByPin({ pin, staffId }) {
   }
 
   // Generate a fresh session token for the matched user so RBAC works correctly.
-  // This uses the Admin API to create a session on behalf of the target user.
+  // admin.generateLink MUST use the service-role `supabase` client, while verifyOtp uses `supabaseAuth`.
   const { data: linkData, error: linkError } =
-    await supabaseAuth.auth.admin.generateLink({
+    await supabase.auth.admin.generateLink({
       type: "magiclink",
       email: matchedAuthUser.email,
     });
@@ -194,7 +212,6 @@ export async function switchStaffByPin({ pin, staffId }) {
     throw createAuthError(500, "PIN_SWITCH_SESSION_FAILED", "Could not issue a session for the switched staff member.");
   }
 
-  // Verify the OTP to obtain a real session
   const { data: sessionData, error: sessionError } =
     await supabaseAuth.auth.verifyOtp({
       token_hash: linkData.properties.hashed_token,
@@ -219,48 +236,30 @@ export async function switchStaffByPin({ pin, staffId }) {
 }
 
 // Set or update a staff member's 4-digit numeric PIN.
-// Enforces uniqueness so no two active staff share the same PIN.
-// Stores in both staff_profiles.pin_code and user_metadata (kept in sync).
+// Enforces uniqueness and stores only in staff_profiles.pin_code (never in JWT user_metadata).
 export async function setStaffPin(userId, pin) {
   if (!pin || typeof pin !== "string" || !/^\d{4}$/.test(pin.trim())) {
     throw createAuthError(400, "INVALID_PIN", "PIN must be exactly 4 numeric digits.");
   }
 
   const cleanPin = pin.trim();
+  await assertPinAvailable(cleanPin, userId);
 
-  // Enforce PIN uniqueness across active staff
-  const { data: conflict } = await supabase
+  const { error: profileError } = await supabase
     .from("staff_profiles")
-    .select("id")
-    .eq("pin_code", cleanPin)
-    .eq("is_active", true)
-    .neq("id", userId)
-    .maybeSingle();
+    .update({ pin_code: cleanPin })
+    .eq("id", userId);
 
-  if (conflict) {
-    throw createAuthError(
-      409,
-      "PIN_ALREADY_IN_USE",
-      "This PIN is already assigned to another active staff member. Please choose a different PIN."
-    );
-  }
-
-  // Store in both user_metadata and staff_profiles.pin_code
-  const [authResult, profileResult] = await Promise.all([
-    supabase.auth.admin.updateUserById(userId, {
-      user_metadata: { pin_code: cleanPin },
-    }),
-    supabase
-      .from("staff_profiles")
-      .update({ pin_code: cleanPin })
-      .eq("id", userId),
-  ]);
-
-  if (authResult.error || !authResult.data?.user) {
-    throw createAuthError(500, "PIN_UPDATE_FAILED", "Failed to update staff PIN.");
-  }
-  if (profileResult.error) {
+  if (profileError) {
     throw createAuthError(500, "PIN_UPDATE_FAILED", "Failed to update staff PIN in profile.");
+  }
+
+  // Scrub any legacy plaintext pin_code from auth user_metadata so it isn't embedded in JWTs
+  const { data: userData } = await supabase.auth.admin.getUserById(userId);
+  if (userData?.user?.user_metadata && Object.hasOwn(userData.user.user_metadata, "pin_code")) {
+    const nextMeta = { ...userData.user.user_metadata };
+    delete nextMeta.pin_code;
+    await supabase.auth.admin.updateUserById(userId, { user_metadata: nextMeta }).catch(() => {});
   }
 
   return { ok: true, message: "Staff PIN updated successfully." };

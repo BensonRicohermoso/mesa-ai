@@ -169,7 +169,34 @@ export async function deleteCategory(id) {
   return { ok: true, id, softDeleted: false };
 }
 
+async function assertNoActiveItemsInCategory(categoryId, categoryName, action) {
+  const { data: activeItems, error } = await supabase
+    .from("menu_items")
+    .select("id")
+    .eq("category_id", categoryId)
+    .eq("is_active", true)
+    .limit(1);
+
+  if (error) throw error;
+
+  if ((activeItems || []).length > 0) {
+    throw createAuthError(
+      409,
+      "CATEGORY_IN_USE",
+      `Archive or move all active items in "${categoryName}" before ${action} it.`
+    );
+  }
+}
+
 export async function updateCategory(id, { name, sortOrder, isActive }) {
+  if (isActive === false) {
+    const existing = await getCategoryById(id);
+    if (!existing) {
+      throw createAuthError(404, "CATEGORY_NOT_FOUND", "Category not found.");
+    }
+    await assertNoActiveItemsInCategory(id, existing.name, "deactivating");
+  }
+
   const updates = {};
   if (name !== undefined) updates.name = name;
   if (sortOrder !== undefined) updates.sort_order = sortOrder;
@@ -200,16 +227,12 @@ export async function updateCategory(id, { name, sortOrder, isActive }) {
 }
 
 export async function setCategoryStatus(id, isActive) {
-  // When deactivating a category, also deactivate all its active items
-  // to prevent orphaned active items in an inactive category.
   if (!isActive) {
-    const { error: itemsError } = await supabase
-      .from("menu_items")
-      .update({ is_active: false })
-      .eq("category_id", id)
-      .eq("is_active", true);
-
-    if (itemsError) throw itemsError;
+    const existing = await getCategoryById(id);
+    if (!existing) {
+      throw createAuthError(404, "CATEGORY_NOT_FOUND", "Category not found.");
+    }
+    await assertNoActiveItemsInCategory(id, existing.name, "deactivating");
   }
 
   const { data, error } = await supabase

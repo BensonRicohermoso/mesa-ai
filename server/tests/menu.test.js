@@ -263,6 +263,59 @@ async function runTests() {
     emptyCategoryId = null; // successfully deleted
     console.log("✓ Empty category hard-deleted.");
 
+    // 14. Test number coercion validation & category deactivation guard
+    console.log("\n14. Testing number coercion validation (null/empty/Infinity)...");
+    for (const badPayload of [
+      { categoryId: newCat.id, name: "Bad Price Null", price: null, costPrice: 10 },
+      { categoryId: newCat.id, name: "Bad Cost Empty", price: 50, costPrice: "" },
+      { categoryId: newCat.id, name: "Bad Price Infinity", price: Infinity, costPrice: 10 },
+    ]) {
+      const badRes = await fetch(`${API_URL}/menu/items`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${adminToken}`,
+        },
+        body: JSON.stringify(badPayload),
+      });
+      if (badRes.status !== 400) {
+        throw new Error(`Expected 400 VALIDATION_ERROR for ${badPayload.name}, got ${badRes.status}`);
+      }
+    }
+    console.log("✓ Coercible null/empty/non-finite price inputs rejected with 400.");
+
+    // Reactivate test item & category to verify category deactivation guard
+    await fetch(`${API_URL}/menu/categories/${newCat.id}/status`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${adminToken}`,
+      },
+      body: JSON.stringify({ isActive: true }),
+    });
+    await fetch(`${API_URL}/menu/items/${newItem.id}/status`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${adminToken}`,
+      },
+      body: JSON.stringify({ isActive: true }),
+    });
+
+    const deactCatRes = await fetch(`${API_URL}/menu/categories/${newCat.id}/status`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${adminToken}`,
+      },
+      body: JSON.stringify({ isActive: false }),
+    });
+    const deactCatBody = await deactCatRes.json();
+    if (deactCatRes.status !== 409 || deactCatBody?.error?.code !== "CATEGORY_IN_USE") {
+      throw new Error(`Expected 409 CATEGORY_IN_USE when deactivating category with active items, got ${deactCatRes.status}`);
+    }
+    console.log("✓ Category deactivation blocked while active items exist (409 CATEGORY_IN_USE).");
+
     console.log("\n===========================================");
     console.log("🎉 ALL MENU MANAGEMENT API TESTS PASSED! 🎉");
     console.log("===========================================\n");
@@ -270,39 +323,42 @@ async function runTests() {
     // ── Cleanup: remove all test data from the live database ──────────────
     console.log("\n🧹 Cleaning up test data...");
 
-    if (createdItemId) {
-      await supabase.from("menu_items").delete().eq("id", createdItemId).catch(() => {});
-    }
-    if (createdCategoryId) {
-      await supabase.from("menu_categories").delete().eq("id", createdCategoryId).catch(() => {});
-    }
-    if (emptyCategoryId) {
-      await supabase.from("menu_categories").delete().eq("id", emptyCategoryId).catch(() => {});
-    }
+    try {
+      if (createdItemId) {
+        await supabase.from("menu_items").delete().eq("id", createdItemId);
+      }
+      if (createdCategoryId) {
+        await supabase.from("menu_categories").delete().eq("id", createdCategoryId);
+      }
+      if (emptyCategoryId) {
+        await supabase.from("menu_categories").delete().eq("id", emptyCategoryId);
+      }
 
-    // Also clean up any orphaned test data from previous unclean runs
-    const { data: orphanedItems } = await supabase
-      .from("menu_items")
-      .select("id")
-      .like("name", "Test Item %");
+      // Also clean up any orphaned test data from previous unclean runs
+      const { data: orphanedItems } = await supabase
+        .from("menu_items")
+        .select("id")
+        .like("name", "Test Item %");
 
-    if (orphanedItems?.length) {
-      const ids = orphanedItems.map((i) => i.id);
-      await supabase.from("menu_items").delete().in("id", ids).catch(() => {});
-      console.log(`  Cleaned ${ids.length} orphaned test item(s).`);
-    }
+      if (orphanedItems?.length) {
+        const ids = orphanedItems.map((i) => i.id);
+        await supabase.from("menu_items").delete().in("id", ids);
+        console.log(`  Cleaned ${ids.length} orphaned test item(s).`);
+      }
 
-    const { data: orphanedCats } = await supabase
-      .from("menu_categories")
-      .select("id")
-      .or("name.like.Test Category %,name.like.Empty Cat %");
+      const { data: orphanedCats } = await supabase
+        .from("menu_categories")
+        .select("id")
+        .or("name.like.Test Category %,name.like.Empty Cat %");
 
-    if (orphanedCats?.length) {
-      const ids = orphanedCats.map((c) => c.id);
-      // Delete items in orphaned test categories first (FK constraint)
-      await supabase.from("menu_items").delete().in("category_id", ids).catch(() => {});
-      await supabase.from("menu_categories").delete().in("id", ids).catch(() => {});
-      console.log(`  Cleaned ${ids.length} orphaned test category/ies.`);
+      if (orphanedCats?.length) {
+        const ids = orphanedCats.map((c) => c.id);
+        await supabase.from("menu_items").delete().in("category_id", ids);
+        await supabase.from("menu_categories").delete().in("id", ids);
+        console.log(`  Cleaned ${ids.length} orphaned test category/ies.`);
+      }
+    } catch (cleanupErr) {
+      console.warn("  Cleanup warning:", cleanupErr.message);
     }
 
     console.log("✓ Cleanup complete.");

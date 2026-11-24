@@ -20,6 +20,31 @@ export function validateUuidParam(value, fieldName = "id") {
   return id;
 }
 
+function parseNonNegativeNumber(value, fieldName, { integer = false } = {}) {
+  const isValidType =
+    typeof value === "number" ||
+    (typeof value === "string" && value.trim() !== "");
+
+  if (!isValidType) {
+    throw createAuthError(
+      400,
+      "VALIDATION_ERROR",
+      `${fieldName} must be a non-negative ${integer ? "integer" : "number"}.`
+    );
+  }
+
+  const num = Number(value);
+  if (!Number.isFinite(num) || num < 0 || (integer && !Number.isInteger(num))) {
+    throw createAuthError(
+      400,
+      "VALIDATION_ERROR",
+      `${fieldName} must be a finite non-negative ${integer ? "integer" : "number"}.`
+    );
+  }
+
+  return num;
+}
+
 /**
  * Validate a category creation or update payload.
  */
@@ -35,14 +60,9 @@ export function validateCategory(body) {
   }
 
   const sortOrder =
-    body?.sortOrder !== undefined ? Number(body.sortOrder) : 0;
-  if (!Number.isInteger(sortOrder) || sortOrder < 0) {
-    throw createAuthError(
-      400,
-      "VALIDATION_ERROR",
-      "sortOrder must be a non-negative integer."
-    );
-  }
+    body?.sortOrder !== undefined
+      ? parseNonNegativeNumber(body.sortOrder, "sortOrder", { integer: true })
+      : 0;
 
   const result = { name, sortOrder };
 
@@ -98,37 +118,8 @@ export function validateMenuItem(body) {
   }
   const imageUrl = rawImageUrl || null;
 
-  if (body?.price === null || body?.price === undefined || body?.price === "") {
-    throw createAuthError(
-      400,
-      "VALIDATION_ERROR",
-      "price is required and must be a non-negative number."
-    );
-  }
-  const price = Number(body.price);
-  if (!Number.isFinite(price) || price < 0) {
-    throw createAuthError(
-      400,
-      "VALIDATION_ERROR",
-      "price must be a finite non-negative number."
-    );
-  }
-
-  if (body?.costPrice === null || body?.costPrice === undefined || body?.costPrice === "") {
-    throw createAuthError(
-      400,
-      "VALIDATION_ERROR",
-      "costPrice is required and must be a non-negative number."
-    );
-  }
-  const costPrice = Number(body.costPrice);
-  if (!Number.isFinite(costPrice) || costPrice < 0) {
-    throw createAuthError(
-      400,
-      "VALIDATION_ERROR",
-      "costPrice must be a finite non-negative number."
-    );
-  }
+  const price = parseNonNegativeNumber(body?.price, "price");
+  const costPrice = parseNonNegativeNumber(body?.costPrice, "costPrice");
 
   const result = { categoryId, name, description, imageUrl, price, costPrice };
 

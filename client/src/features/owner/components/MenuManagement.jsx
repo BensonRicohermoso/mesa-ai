@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import {
   getCategories,
   createCategory,
+  setCategoryStatus,
   deleteCategory,
   getMenuItems,
   createMenuItem,
@@ -42,7 +43,7 @@ export function MenuManagement() {
     try {
       setError('')
       const [catRes, itemRes] = await Promise.all([
-        getCategories(),
+        getCategories({ includeInactive: true }),
         getMenuItems(),
       ])
       setCategories(catRes.categories || [])
@@ -90,17 +91,40 @@ export function MenuManagement() {
   // ── Category Handlers ──────────────────────────────────────────────────────
   async function handleCreateCategory(data) {
     const created = await createCategory(data)
-    setCategories((prev) =>
-      [...prev, created].sort((a, b) => a.sortOrder - b.sortOrder)
-    )
+    setCategories((prev) => {
+      const exists = prev.some((c) => c.id === created.id)
+      const next = exists
+        ? prev.map((c) => (c.id === created.id ? created : c))
+        : [...prev, created]
+      return next.sort((a, b) => a.sortOrder - b.sortOrder)
+    })
     showNotice(`Category "${created.name}" created.`)
+  }
+
+  async function handleToggleCategoryStatus(cat) {
+    try {
+      setError('')
+      const updated = await setCategoryStatus(cat.id, !cat.isActive)
+      setCategories((prev) => prev.map((c) => (c.id === updated.id ? updated : c)))
+      showNotice(
+        `Category "${updated.name}" ${updated.isActive ? 'restored' : 'deactivated'}.`
+      )
+    } catch (err) {
+      setError(err.message || 'Failed to update category status.')
+    }
   }
 
   async function handleRemoveCategory(cat) {
     try {
       setError('')
-      await deleteCategory(cat.id)
-      setCategories((prev) => prev.filter((c) => c.id !== cat.id))
+      const result = await deleteCategory(cat.id)
+      if (result.softDeleted) {
+        setCategories((prev) =>
+          prev.map((c) => (c.id === cat.id ? { ...c, isActive: false } : c))
+        )
+      } else {
+        setCategories((prev) => prev.filter((c) => c.id !== cat.id))
+      }
       if (selectedCategoryId === cat.id) {
         setSelectedCategoryId(null)
       }
@@ -204,21 +228,35 @@ export function MenuManagement() {
               <li key={cat.id} className="category-row">
                 <button
                   type="button"
-                  className={`category-item ${selectedCategoryId === cat.id ? 'category-item--active' : ''}`}
+                  className={`category-item ${selectedCategoryId === cat.id ? 'category-item--active' : ''} ${!cat.isActive ? 'category-item--inactive' : ''}`}
                   onClick={() => setSelectedCategoryId(cat.id)}
                 >
-                  <span>{cat.name}</span>
+                  <span>
+                    {cat.name}
+                    {!cat.isActive && <span className="inactive-label"> (Inactive)</span>}
+                  </span>
                   <span className="category-count">{categoryCounts.get(cat.id) || 0}</span>
                 </button>
-                <button
-                  type="button"
-                  className="category-remove-btn"
-                  onClick={() => handleRemoveCategory(cat)}
-                  title={`Remove ${cat.name}`}
-                  aria-label={`Remove ${cat.name}`}
-                >
-                  ×
-                </button>
+                {cat.isActive ? (
+                  <button
+                    type="button"
+                    className="category-remove-btn"
+                    onClick={() => handleRemoveCategory(cat)}
+                    title={`Remove ${cat.name}`}
+                    aria-label={`Remove ${cat.name}`}
+                  >
+                    ×
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className="action-pill action-pill--small"
+                    onClick={() => handleToggleCategoryStatus(cat)}
+                    title={`Restore ${cat.name}`}
+                  >
+                    Restore
+                  </button>
+                )}
               </li>
             ))}
           </ul>
