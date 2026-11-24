@@ -285,11 +285,7 @@ export async function updateStaff(id, updates) {
       nextMeta.full_name = updates.fullName;
     }
     if (updates.pinCode !== undefined) {
-      if (updates.pinCode === null) {
-        delete nextMeta.pin_code;
-      } else {
-        nextMeta.pin_code = updates.pinCode;
-      }
+      nextMeta.pin_code = updates.pinCode;
     }
 
     const authPayload = { user_metadata: nextMeta };
