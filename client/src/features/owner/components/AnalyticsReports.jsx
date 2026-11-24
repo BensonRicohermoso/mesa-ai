@@ -54,15 +54,18 @@ export function AnalyticsReports({ filter, subView, onSubViewChange }) {
   const [engSortDir, setEngSortDir] = useState('desc')
   const [includeArchived, setIncludeArchived] = useState(false)
 
-  // Orders audit pagination
+  // Orders audit pagination — reset to page 0 when filters change
   const [ordersPage, setOrdersPage] = useState(0)
+  const [prevFilterKey, setPrevFilterKey] = useState('')
   const ordersPerPage = 15
 
-  // Reset pagination when filter changes
   const filterKey = `${filter.from}|${filter.to}|${filter.categoryId}|${filter.paymentMethod}`
-  useEffect(() => {
-    setOrdersPage(0)
-  }, [filterKey])
+  if (filterKey !== prevFilterKey) {
+    setPrevFilterKey(filterKey)
+    if (ordersPage !== 0) {
+      setOrdersPage(0)
+    }
+  }
 
   const fetchData = useCallback(async (signal) => {
     setLoading(true)
