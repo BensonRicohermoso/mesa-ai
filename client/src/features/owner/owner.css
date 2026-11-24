@@ -1027,3 +1027,596 @@ select.form-input option {
 .staff-pin-row {
   margin-top: 0.4rem;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   OWNER ANALYTICS — Dashboard, KPIs, Charts, Toolbar, Reports
+   Extends the owner dark editorial system.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Analytics Toolbar ─────────────────────────────────────────────────── */
+
+.analytics-toolbar {
+  margin-bottom: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.analytics-toolbar-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.analytics-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.analytics-toolbar-filters {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.analytics-filter-select {
+  min-width: 150px;
+  max-width: 200px;
+  font-size: 0.78rem;
+  padding: 0.45rem 0.7rem;
+}
+
+.analytics-date-inputs {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.analytics-date-inputs .form-label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.analytics-date-inputs .form-input {
+  max-width: 165px;
+  font-size: 0.8rem;
+  padding: 0.4rem 0.6rem;
+}
+
+.analytics-compare-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  cursor: pointer;
+}
+
+.analytics-compare-toggle input[type="checkbox"] {
+  accent-color: var(--white);
+  width: 14px;
+  height: 14px;
+}
+
+.analytics-compare-label {
+  font-family: var(--font-sans);
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted-gray);
+}
+
+.action-pill--preview {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.preview-banner {
+  font-family: var(--font-sans);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--black);
+  background: var(--white);
+  padding: 0.55rem 1rem;
+  text-align: center;
+}
+
+/* ── KPI Grid ──────────────────────────────────────────────────────────── */
+
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  margin-bottom: 1.5rem;
+}
+
+.kpi-grid--compact {
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+}
+
+.kpi-cell {
+  background: #0a0a0a;
+  padding: 1.2rem 1.4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.kpi-label {
+  font-family: var(--font-sans);
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--muted-gray);
+}
+
+.kpi-value {
+  font-family: var(--font-serif);
+  font-size: 1.5rem;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  color: var(--white);
+  line-height: 1.1;
+}
+
+.kpi-delta {
+  font-family: var(--font-sans);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+}
+
+.kpi-delta--up {
+  color: var(--white);
+}
+
+.kpi-delta--down {
+  color: var(--muted-gray);
+}
+
+.kpi-secondary {
+  font-family: var(--font-sans);
+  font-size: 0.68rem;
+  color: var(--muted-gray);
+  font-weight: 400;
+}
+
+/* ── Dashboard Charts Grid ─────────────────────────────────────────────── */
+
+.dashboard-charts-grid {
+  display: grid;
+  grid-template-columns: 1.35fr 1fr;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.dashboard-chart-section {
+  min-width: 0;
+}
+
+.dashboard-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.dashboard-section-title {
+  font-family: var(--font-sans);
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--muted-gray);
+  margin: 0 0 0.75rem;
+}
+
+.dashboard-section-header .dashboard-section-title {
+  margin-bottom: 0;
+}
+
+/* ── Chart Box ─────────────────────────────────────────────────────────── */
+
+.chart-box {
+  min-width: 0;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: #0a0a0a;
+  padding: 0.75rem 0.5rem 0.5rem;
+}
+
+.chart-tooltip {
+  background: #1a1a1a;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 0.65rem 0.85rem;
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  color: var(--white);
+  line-height: 1.6;
+}
+
+.chart-tooltip-label {
+  font-size: 0.8rem;
+  display: block;
+  margin-bottom: 0.25rem;
+  letter-spacing: -0.01em;
+}
+
+.chart-tooltip-row {
+  color: #cccccc;
+  font-size: 0.72rem;
+}
+
+/* ── Dashboard Bottom Grid ─────────────────────────────────────────────── */
+
+.dashboard-bottom-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.dashboard-bottom-section {
+  min-width: 0;
+}
+
+.top-item-name {
+  display: block;
+  font-family: var(--font-serif);
+  font-size: 1rem;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
+
+.top-item-category {
+  display: block;
+  font-family: var(--font-sans);
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--muted-gray);
+  margin-top: 0.15rem;
+}
+
+/* ── Order Status Badges ───────────────────────────────────────────────── */
+
+.order-status-badge {
+  font-family: var(--font-sans);
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 0.2rem 0.6rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  display: inline-block;
+}
+
+.order-status-badge--completed {
+  color: var(--white);
+  border-color: var(--white);
+}
+
+.order-status-badge--ready {
+  color: #cccccc;
+  border-color: #cccccc;
+}
+
+.order-status-badge--preparing,
+.order-status-badge--confirmed {
+  color: var(--muted-gray);
+  border-color: var(--muted-gray);
+}
+
+.order-status-badge--pending {
+  color: #666666;
+  border-color: #444444;
+}
+
+.order-status-badge--cancelled,
+.order-status-badge--expired {
+  color: #666666;
+  border-color: #333333;
+  font-style: italic;
+}
+
+.order-ref-cell {
+  font-family: var(--font-sans);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: #cccccc;
+}
+
+.order-time-cell {
+  font-size: 0.72rem;
+  color: var(--muted-gray);
+  white-space: nowrap;
+}
+
+/* ── Dashboard CTA ─────────────────────────────────────────────────────── */
+
+.dashboard-cta {
+  text-align: center;
+  padding: 1rem 0 0.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* ── Dashboard States ──────────────────────────────────────────────────── */
+
+.dashboard-error-state,
+.dashboard-empty-state {
+  padding: 2rem 0;
+  text-align: center;
+}
+
+.dashboard-empty-state h2 {
+  font-family: var(--font-serif);
+  font-size: 1.6rem;
+  font-weight: 300;
+  margin: 0 0 0.5rem;
+}
+
+/* ── Skeleton ──────────────────────────────────────────────────────────── */
+
+.dashboard-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.skeleton-block {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.04) 0%,
+    rgba(255, 255, 255, 0.08) 50%,
+    rgba(255, 255, 255, 0.04) 100%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+  border-radius: 0;
+}
+
+.skeleton-block--sm {
+  height: 12px;
+  width: 60%;
+  margin-bottom: 0.4rem;
+}
+
+.skeleton-block--lg {
+  height: 28px;
+  width: 80%;
+  margin-bottom: 0.4rem;
+}
+
+.skeleton-block--chart {
+  height: 280px;
+  width: 100%;
+}
+
+@keyframes skeleton-pulse {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ── Analytics Sub-tabs ────────────────────────────────────────────────── */
+
+.analytics-sub-tabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: 1.5rem;
+}
+
+/* ── Quadrant Filter ───────────────────────────────────────────────────── */
+
+.quadrant-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.quadrant-pill {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 0.35rem 0.85rem;
+  font-family: var(--font-sans);
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted-gray);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.quadrant-pill:hover {
+  color: var(--white);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.quadrant-pill--active {
+  background: var(--white);
+  color: var(--black);
+  border-color: var(--white);
+}
+
+.quadrant-pill--active:hover {
+  background: var(--white);
+  color: var(--black);
+}
+
+/* ── Sortable Table Headers ────────────────────────────────────────────── */
+
+.sortable-th {
+  cursor: pointer;
+  user-select: none;
+  transition: color 0.15s;
+}
+
+.sortable-th:hover {
+  color: var(--white);
+}
+
+/* ── Reports Layout ────────────────────────────────────────────────────── */
+
+.analytics-reports {
+  margin-top: 0.5rem;
+}
+
+.reports-section {
+  margin-top: 0.5rem;
+}
+
+.reports-subsection {
+  margin-top: 2rem;
+}
+
+.reports-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* ── Pagination ────────────────────────────────────────────────────────── */
+
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 0.75rem;
+}
+
+/* ── Responsive ────────────────────────────────────────────────────────── */
+
+@media (max-width: 960px) {
+  .kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .dashboard-charts-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-bottom-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .analytics-toolbar-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .analytics-toolbar-actions {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 640px) {
+  .kpi-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .kpi-value {
+    font-size: 1.25rem;
+  }
+
+  .kpi-cell {
+    padding: 0.9rem 1rem;
+  }
+
+  .analytics-filter-select {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .segment-toggle {
+    flex-wrap: wrap;
+  }
+}
+
+/* ── Print: Editorial Report ───────────────────────────────────────────── */
+
+@media print {
+  .analytics-print-report {
+    color: var(--black) !important;
+    background: #ffffff !important;
+  }
+
+  .analytics-print-report .kpi-cell {
+    background: #ffffff !important;
+    border: 1px solid #eaeaea !important;
+  }
+
+  .analytics-print-report .kpi-grid {
+    background: #eaeaea !important;
+    border-color: #eaeaea !important;
+  }
+
+  .analytics-print-report .kpi-value {
+    color: var(--black) !important;
+  }
+
+  .analytics-print-report .kpi-label,
+  .analytics-print-report .kpi-secondary {
+    color: #666666 !important;
+  }
+
+  .analytics-print-report .kpi-delta--up,
+  .analytics-print-report .kpi-delta--down {
+    color: #333333 !important;
+  }
+
+  .analytics-print-report .editorial-table th {
+    background: #f7f7f5 !important;
+    color: #333333 !important;
+  }
+
+  .analytics-print-report .editorial-table td {
+    color: #050505 !important;
+    border-bottom-color: #eaeaea !important;
+  }
+
+  .analytics-print-report .editorial-table-wrap {
+    border-color: #eaeaea !important;
+    background: #ffffff !important;
+  }
+
+  .analytics-print-report .chart-box {
+    background: #ffffff !important;
+    border-color: #eaeaea !important;
+  }
+
+  .analytics-print-report .dashboard-section-title {
+    color: #333333 !important;
+  }
+
+  .analytics-print-report .table-code-pill {
+    background: #f7f7f5 !important;
+    color: #050505 !important;
+    border-color: #cccccc !important;
+  }
+
+  .analytics-print-report .order-status-badge {
+    color: #050505 !important;
+    border-color: #cccccc !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+}
