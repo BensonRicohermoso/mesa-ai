@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
+import { TwinOrbit } from '../../../shared/components/TwinOrbit.jsx'
 import {
   getCategories,
   createCategory,
@@ -213,6 +214,7 @@ export function MenuManagement() {
   if (loading) {
     return (
       <div className="mgmt-loading">
+        <TwinOrbit size="1.1rem" label="Loading menu data" />
         <p>Loading menu data…</p>
       </div>
     )
