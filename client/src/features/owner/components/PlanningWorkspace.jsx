@@ -2,15 +2,21 @@
 import { useCallback, useEffect, useState } from 'react'
 import { formatPhp } from '../utils/analyticsFormatters.js'
 import { getMenuItems } from '../../../shared/api/menuApi.js'
-import { addAdjustment, createIngredient, createSupplier, getIngredients, getRecipe, getSuppliers, putRecipe } from '../../../shared/api/inventoryApi.js'
-import { createPlanningEvent, deletePlanningEvent, getPlanningEvents } from '../../../shared/api/advisorApi.js'
-import { acknowledgePlanningRecommendation, postAiPlanning } from '../../../shared/api/aiApi.js'
+import { addAdjustment, createIngredient, createSupplier, getAdjustments, getIngredients, getRecipe, getSuppliers, putRecipe, updateIngredient, updateSupplier } from '../../../shared/api/inventoryApi.js'
+import { createPlanningEvent, deletePlanningEvent, getPlanningEvents, updatePlanningEvent } from '../../../shared/api/advisorApi.js'
+import { acknowledgePlanningRecommendation, getPlanningAcknowledgements, postAiPlanning } from '../../../shared/api/aiApi.js'
 import { loadStoredSession } from '../../auth/authClient.js'
 
 const EMPTY_INGREDIENT = { name: '', baseUnit: 'g', onHandQuantity: 0, parLevelQuantity: 0, unitCost: 0, leadTimeDays: 0, supplierId: '' }
 const EMPTY_EVENT = { title: '', eventType: 'promotion', startsOn: '', endsOn: '', demandAdjustmentPct: 10, note: '' }
 
-function localDate(offset = 0) { const date = new Date(); date.setDate(date.getDate() + offset); return date.toISOString().slice(0, 10) }
+function manilaDate(offset = 0) {
+  const parts = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Manila', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(new Date())
+  const part = (type) => parts.find((value) => value.type === type)?.value
+  const date = new Date(`${part('year')}-${part('month')}-${part('day')}T00:00:00Z`)
+  date.setUTCDate(date.getUTCDate() + offset)
+  return date.toISOString().slice(0, 10)
+}
 function csvDownload(type, date) {
   const session = loadStoredSession()
   return fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/ai/planning/export?type=${type}&date=${date}`, { headers: { Authorization: `Bearer ${session?.accessToken || ''}` } })
@@ -31,11 +37,18 @@ export function PlanningWorkspace() {
   const [events, setEvents] = useState([])
   const [ingredientForm, setIngredientForm] = useState(EMPTY_INGREDIENT)
   const [supplierName, setSupplierName] = useState('')
-  const [eventForm, setEventForm] = useState({ ...EMPTY_EVENT, startsOn: localDate(1), endsOn: localDate(1) })
+  const [eventForm, setEventForm] = useState({ ...EMPTY_EVENT, startsOn: manilaDate(1), endsOn: manilaDate(1) })
   const [selectedMenuId, setSelectedMenuId] = useState('')
   const [recipe, setRecipe] = useState([])
-  const [prepDate, setPrepDate] = useState(localDate())
+  const [prepDate, setPrepDate] = useState(manilaDate())
   const [acknowledged, setAcknowledged] = useState(new Set())
+  const [ingredientQuery, setIngredientQuery] = useState('')
+  const [editingIngredient, setEditingIngredient] = useState(null)
+  const [editingSupplier, setEditingSupplier] = useState(null)
+  const [editingEvent, setEditingEvent] = useState(null)
+  const [adjustment, setAdjustment] = useState(null)
+  const [adjustmentForm, setAdjustmentForm] = useState({ reason: 'physical_count', countedQuantity: '', quantityDelta: '', note: '' })
+  const [audit, setAudit] = useState(null)
 
   const loadSetup = useCallback(async () => {
     const [ingredientRes, supplierRes, menuRes] = await Promise.all([getIngredients(true), getSuppliers(true), getMenuItems({ includeInactive: false })])
@@ -43,24 +56,27 @@ export function PlanningWorkspace() {
   }, [])
   const loadPlanning = useCallback(async (forceRefresh = false) => {
     setLoading(true); setError('')
-    try { const res = await postAiPlanning({ horizonDays: horizon, tz: 'Asia/Manila', sourceMode: 'live', forceRefresh }); setPlanning(res); setPrepDate((current) => res.facts.dailyPrep.some((day) => day.date === current) ? current : res.facts.dailyPrep[0]?.date || localDate()) }
+    try { const res = await postAiPlanning({ horizonDays: horizon, tz: 'Asia/Manila', sourceMode: 'live', forceRefresh }); setPlanning(res); setPrepDate((current) => res.facts.dailyPrep.some((day) => day.date === current) ? current : res.facts.dailyPrep[0]?.date || manilaDate()) }
     catch (err) { setError(err.message || 'Planning could not be loaded.') }
     finally { setLoading(false) }
   }, [horizon])
   useEffect(() => { loadSetup().catch((err) => setError(err.message)); loadPlanning() }, [loadSetup, loadPlanning])
   // oxlint-disable-next-line react/set-state-in-effect -- fetch completion synchronizes the selected recipe.
   useEffect(() => { if (!selectedMenuId) return; getRecipe(selectedMenuId).then((res) => setRecipe(res.items.map((item) => ({ ingredientId: item.ingredientId, quantityPerServing: item.quantityPerServing })))).catch((err) => setError(err.message)) }, [selectedMenuId])
-  useEffect(() => { getPlanningEvents(localDate(), localDate(90)).then((res) => setEvents(res.events || [])).catch(() => {}) }, [])
+  useEffect(() => { getPlanningEvents(manilaDate(), manilaDate(90)).then((res) => setEvents(res.events || [])).catch(() => {}) }, [])
+  useEffect(() => { getPlanningAcknowledgements().then((res) => setAcknowledged(new Set((res.acknowledgements || []).map((row) => row.recommendationKey))).catch(() => {}) }, [])
   const selectedPrep = planning?.facts?.dailyPrep.find((day) => day.date === prepDate)
   const warnings = planning?.facts?.setupWarnings || []
   const actions = planning?.interpretation?.prioritizedActions || []
   const saveIngredient = async (event) => { event.preventDefault(); try { await createIngredient({ ...ingredientForm, supplierId: ingredientForm.supplierId || null, onHandQuantity: Number(ingredientForm.onHandQuantity), parLevelQuantity: Number(ingredientForm.parLevelQuantity), unitCost: Number(ingredientForm.unitCost), leadTimeDays: Number(ingredientForm.leadTimeDays) }); setIngredientForm(EMPTY_INGREDIENT); await loadSetup(); setNotice('Ingredient saved.'); } catch (err) { setError(err.message) } }
-  const saveCount = async (ingredient) => { const value = window.prompt(`Physical count for ${ingredient.name} (${ingredient.baseUnit})`, ingredient.stock?.calculatedOnHand ?? ingredient.onHandQuantity); if (value === null) return; try { await addAdjustment(ingredient.id, { reason: 'physical_count', countedQuantity: Number(value), note: 'Owner count' }); await loadSetup(); await loadPlanning(true); setNotice('Physical count recorded.'); } catch (err) { setError(err.message) } }
+  const openAdjustment = (ingredient) => { setAdjustment(ingredient); setAdjustmentForm({ reason: 'physical_count', countedQuantity: ingredient.stock?.calculatedOnHand ?? ingredient.onHandQuantity, quantityDelta: '', note: '' }) }
+  const saveAdjustment = async (event) => { event.preventDefault(); if (!adjustment) return; try { const payload = adjustmentForm.reason === 'physical_count' ? { reason: 'physical_count', countedQuantity: Number(adjustmentForm.countedQuantity), note: adjustmentForm.note } : { reason: adjustmentForm.reason, quantityDelta: Number(adjustmentForm.quantityDelta), note: adjustmentForm.note }; await addAdjustment(adjustment.id, payload); setAdjustment(null); await loadSetup(); await loadPlanning(true); setNotice('Inventory adjustment recorded.'); } catch (err) { setError(err.message) } }
   const saveRecipe = async () => { try { await putRecipe(selectedMenuId, recipe.filter((line) => line.ingredientId && Number(line.quantityPerServing) > 0)); setNotice('Recipe saved.'); await loadPlanning(true) } catch (err) { setError(err.message) } }
-  const saveEvent = async (event) => { event.preventDefault(); try { await createPlanningEvent({ ...eventForm, demandAdjustmentPct: Number(eventForm.eventType === 'closure' ? -100 : eventForm.demandAdjustmentPct) }); const res = await getPlanningEvents(localDate(), localDate(90)); setEvents(res.events || []); await loadPlanning(true); setNotice('Planning event saved.'); } catch (err) { setError(err.message) } }
+  const saveEvent = async (event) => { event.preventDefault(); try { const payload = { ...eventForm, demandAdjustmentPct: Number(eventForm.eventType === 'closure' ? -100 : eventForm.demandAdjustmentPct) }; if (editingEvent) await updatePlanningEvent(editingEvent.id, payload); else await createPlanningEvent(payload); const res = await getPlanningEvents(manilaDate(), manilaDate(90)); setEvents(res.events || []); setEditingEvent(null); await loadPlanning(true); setNotice('Planning event saved.'); } catch (err) { setError(err.message) } }
   const acknowledge = async (action) => { try { await acknowledgePlanningRecommendation(action.recommendationKey); setAcknowledged((current) => new Set(current).add(action.recommendationKey)); } catch (err) { setError(err.message) } }
   const performance = planning?.facts?.forecast
   const configWarnings = warnings.slice(0, 8)
+  const filteredIngredients = ingredients.filter((item) => item.name.toLowerCase().includes(ingredientQuery.toLowerCase()))
 
   return <div className="planning-workspace">
     <div className="planning-nav no-print"><button className={view === 'planning' ? 'planning-nav__active' : ''} onClick={() => setView('planning')}>Planning</button><button className={view === 'setup' ? 'planning-nav__active' : ''} onClick={() => setView('setup')}>Inventory setup</button></div>
