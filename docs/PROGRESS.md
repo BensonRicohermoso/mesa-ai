@@ -93,6 +93,10 @@ Customer menu and cart UI at `/t/:tableCode`.
 
 ### 2026-11-27
 
+- Completed the Inventory Advisor foundation: inventory ledger, paid-sales recipe consumption, planning events, deterministic planning, protected exports/acknowledgements, safe Gemini interpretation fallback, and Owner Planning/setup workspace.
+- Added `002_dev_inventory_advisor_fixture.sql`, a repeatable DEV-only fixture with suppliers, ingredients, recipes, physical counts, wastage, 12 weeks of paid history, and promotion/closure events.
+- Added `docs/INVENTORY_ADVISOR_RELEASE.md` with setup order, manual verification, production gate, and monitoring guidance.
+
 - Combined all planned AI work into `feature/dev2-ai` and documented the architecture, API contracts, and risk mitigations in `docs/AI_PLAN.md` and `docs/API.md`.
 - Implemented the server-only Gemini REST client (`server/src/modules/ai/gemini.client.js`) using `GEMINI_API_KEY` and configurable `GEMINI_MODEL` (`gemini-2.5-flash` default) with `12s` timeout and JSON fence cleanup.
 - Implemented `/api/ai` endpoints (`GET /status`, `POST /briefing`, `POST /forecast`, `POST /qna`) in `server/src/modules/ai/` with `admin` RBAC, per-staff rate limiting (30 req/min), bounded TTL + in-flight deduplication cache, backend anomaly/forecast math, Q&A bounds, and deterministic fallbacks.

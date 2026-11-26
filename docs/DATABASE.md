@@ -18,11 +18,14 @@
 
 | 11 | `20261127100000_inventory_advisor_foundation.sql` | Create suppliers, ingredients, recipes, inventory adjustments, planning events, Advisor acknowledgements, indexes, triggers, and admin RLS. | Codex | 2026-11-27 | Pending | — |
 
+| 12 | `20261127110000_inventory_recipe_replacement.sql` | Add atomic recipe replacement RPC with active-ingredient validation. | Codex | 2026-11-27 | Pending | — |
+
 ## Seed Data
 
 | File name | Purpose | Date applied | Environment | Safe to re-run |
 | --- | --- | --- | --- | --- |
 | `001_dev_menu_and_tables.sql` | Seed 4 menu categories, 13 menu items, and 10 dining tables. | 2026-11-22 | DEV ONLY | Yes |
+| `002_dev_inventory_advisor_fixture.sql` | Seed realistic Inventory Advisor data after seed 001 and migrations 11–12. | Not applied | DEV ONLY | Yes |
 
 Seed data must never be run against production data.
 
