@@ -6,65 +6,108 @@
 /* ── Tab Navigation & Shell Width ───────────────────────────────────────── */
 
 .owner-shell {
-  padding: clamp(1.25rem, 3vw, 2.75rem);
+  min-height: 100svh;
+  padding: clamp(1rem, 2.4vw, 2.5rem);
+  background:
+    radial-gradient(circle at 83% 8%, rgba(212, 168, 95, 0.09), transparent 23rem),
+    linear-gradient(135deg, #050505 0%, #090908 55%, #050505 100%);
 }
 
-.owner-container,
+.owner-workspace {
+  width: min(100%, 106rem);
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 10.5rem minmax(0, 1fr);
+  gap: clamp(1rem, 2.5vw, 3rem);
+  align-items: start;
+}
+
+.owner-container {
+  width: 100%;
+  margin: 0;
+}
+
 .owner-card {
-  width: min(100%, 96rem);
+  width: 100%;
+  margin: 0;
+  padding: clamp(1.75rem, 3.5vw, 4rem);
+  background: linear-gradient(145deg, rgba(20, 20, 18, 0.98), rgba(10, 10, 10, 0.98));
+  border: 1px solid var(--mesa-line);
+  box-shadow: 0 28px 90px rgba(0, 0, 0, 0.28);
 }
 
-.owner-card {
-  padding: clamp(2rem, 4vw, 3.75rem);
+.owner-rail {
+  position: sticky;
+  top: 1.5rem;
+  display: grid;
+  align-content: start;
+  gap: 0.25rem;
+  padding-top: 1.1rem;
 }
 
-.owner-tabs {
-  display: flex;
-  gap: 0.35rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
-  margin-bottom: 2.5rem;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.22) transparent;
-}
-
-.owner-tabs::-webkit-scrollbar {
-  height: 4px;
-}
-
-.owner-tabs::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.owner-tabs::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.22);
-}
-
-.owner-tab {
-  background: none;
-  border: none;
-  border-bottom: 2px solid transparent;
-  padding: 1rem 1.6rem;
+.owner-rail::before {
+  content: 'MESA / CONTROL';
+  margin: 0 0 1.25rem 0.75rem;
+  color: rgba(255, 255, 255, 0.38);
   font-family: var(--font-sans);
-  font-size: 0.78rem;
+  font-size: 0.58rem;
   font-weight: 600;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.18em;
+}
+
+.owner-rail-item {
+  position: relative;
+  display: grid;
+  grid-template-columns: 2.4rem minmax(0, 1fr);
+  align-items: baseline;
+  gap: 0.55rem;
+  width: 100%;
+  padding: 0.72rem 0.65rem 0.72rem 0.75rem;
+  text-align: left;
+  color: rgba(255, 255, 255, 0.36);
+  transition: color 180ms ease, background-color 180ms ease;
+}
+
+.owner-rail-item::before {
+  position: absolute;
+  left: 0;
+  width: 2px;
+  height: 1.1rem;
+  background: transparent;
+  content: '';
+  transition: background-color 180ms ease, height 180ms ease;
+}
+
+.owner-rail-index {
+  font-family: var(--font-sans);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  font-variant-numeric: tabular-nums;
+}
+
+.owner-rail-label {
+  font-family: var(--font-sans);
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0.11em;
   text-transform: uppercase;
-  color: var(--muted-gray);
-  cursor: pointer;
   white-space: nowrap;
-  flex-shrink: 0;
-  transition: color 0.2s, border-color 0.2s;
 }
 
-.owner-tab:hover {
+.owner-rail-item:hover,
+.owner-rail-item--active {
   color: var(--white);
+  background: rgba(255, 255, 255, 0.035);
 }
 
-.owner-tab--active {
-  color: var(--white);
-  border-bottom-color: var(--white);
+.owner-rail-item--active .owner-rail-index {
+  color: var(--mesa-brass);
+}
+
+.owner-rail-item--active::before {
+  height: 100%;
+  background: var(--mesa-brass);
 }
 
 /* ── Menu Management Layout ─────────────────────────────────────────────── */

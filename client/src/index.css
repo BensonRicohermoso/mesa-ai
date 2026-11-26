@@ -11,6 +11,9 @@
   --light-gray: #eaeaea;
   --muted-gray: #858585;
   --dark-surface: #0a0a0a;
+  --mesa-brass: #d4a85f;
+  --mesa-brass-soft: rgba(212, 168, 95, 0.16);
+  --mesa-line: rgba(255, 255, 255, 0.11);
 
   font-family: var(--font-sans);
   color: var(--black);

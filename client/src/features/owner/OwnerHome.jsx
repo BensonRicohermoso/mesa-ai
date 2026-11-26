@@ -68,7 +68,23 @@ export function OwnerHome() {
 
   return (
     <main className="owner-shell">
-      <div className="owner-container">
+      <div className="owner-workspace">
+        <nav className="owner-rail" aria-label="Workspace sections">
+          {visibleTabs.map((tab) => (
+            <button
+              key={tab.key}
+              className={`owner-rail-item ${activeTab === tab.key ? 'owner-rail-item--active' : ''}`}
+              type="button"
+              onClick={() => setActiveTab(tab.key)}
+              aria-current={activeTab === tab.key ? 'page' : undefined}
+            >
+              <span className="owner-rail-index">{tab.label.slice(0, 2)}</span>
+              <span className="owner-rail-label">{tab.label.slice(5)}</span>
+            </button>
+          ))}
+        </nav>
+
+        <div className="owner-container">
         <section className="owner-card">
           {/* ── Header Bar ──────────────────────────────────────── */}
           <header className="owner-header-bar">
@@ -108,18 +124,6 @@ export function OwnerHome() {
           </header>
 
           {/* ── Tab Navigation ──────────────────────────────────── */}
-          <nav className="owner-tabs">
-            {visibleTabs.map((tab) => (
-              <button
-                key={tab.key}
-                className={`owner-tab ${activeTab === tab.key ? 'owner-tab--active' : ''}`}
-                onClick={() => setActiveTab(tab.key)}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </nav>
-
           {/* ── Analytics Toolbar (shared by Overview & Reports) ── */}
           {showToolbar && (
             <AnalyticsToolbar
@@ -178,6 +182,7 @@ export function OwnerHome() {
             </button>
           </footer>
         </section>
+        </div>
       </div>
 
       {/* PIN Shift Switch Modal */}
