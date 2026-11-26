@@ -7,6 +7,7 @@ import menuRoutes from "./modules/menu/menu.routes.js";
 import tablesRoutes from "./modules/tables/tables.routes.js";
 import staffRoutes from "./modules/staff/staff.routes.js";
 import ordersRoutes from "./modules/orders/orders.routes.js";
+import aiRoutes from "./modules/ai/ai.routes.js";
 import {
   errorHandler,
   notFoundHandler,
@@ -37,6 +38,7 @@ app.use("/api/menu", menuRoutes);
 app.use("/api/tables", tablesRoutes);
 app.use("/api/staff", staffRoutes);
 app.use("/api", ordersRoutes);
+app.use("/api/ai", aiRoutes);
 app.use(notFoundHandler);
 app.use(errorHandler);
 
