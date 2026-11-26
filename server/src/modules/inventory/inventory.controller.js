@@ -4,8 +4,8 @@ import { invalidatePlanningCache } from "../ai/planning.service.js";
 import { validateAdjustment, validateIngredient, validateRecipe, validateSupplier, validateUuidParam } from "./inventory.validators.js";
 
 export async function getSuppliers(req, res, next) { try { res.json({ suppliers: await inventory.listSuppliers({ includeInactive: req.query.includeInactive === "true" }) }); } catch (error) { next(error); } }
-export async function postSupplier(req, res, next) { try { res.status(201).json(await inventory.createSupplier(validateSupplier(req.body))); } catch (error) { next(error); } }
-export async function patchSupplier(req, res, next) { try { res.json(await inventory.updateSupplier(validateUuidParam(req.params.id, "supplierId"), validateSupplier(req.body, { partial: true }))); } catch (error) { next(error); } }
+export async function postSupplier(req, res, next) { try { const result = await inventory.createSupplier(validateSupplier(req.body)); invalidatePlanningCache(); res.status(201).json(result); } catch (error) { next(error); } }
+export async function patchSupplier(req, res, next) { try { const result = await inventory.updateSupplier(validateUuidParam(req.params.id, "supplierId"), validateSupplier(req.body, { partial: true })); invalidatePlanningCache(); res.json(result); } catch (error) { next(error); } }
 export async function getIngredients(req, res, next) { try { res.json({ ingredients: await inventory.listIngredients({ includeInactive: req.query.includeInactive === "true" }) }); } catch (error) { next(error); } }
 export async function postIngredient(req, res, next) { try { const result = await inventory.createIngredient(validateIngredient(req.body)); invalidatePlanningCache(); res.status(201).json(result); } catch (error) { next(error); } }
 export async function patchIngredient(req, res, next) { try { const result = await inventory.updateIngredient(validateUuidParam(req.params.id, "ingredientId"), validateIngredient(req.body, { partial: true })); invalidatePlanningCache(); res.json(result); } catch (error) { next(error); } }

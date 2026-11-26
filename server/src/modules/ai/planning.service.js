@@ -42,15 +42,16 @@ export async function computePlanningFacts({ horizonDays, tz }) {
   const historyFrom = dateString(history.start);
   const historyToExclusive = dateString(addDays(history.end, 1));
   const horizonEnd = dateString(addDays(today, horizonDays - 1));
-  const [sales, eventsResult, menuResult, recipeResult, ingredientsResult, ordersResult] = await Promise.all([
+  const [sales, eventsResult, menuResult, recipeResult, ingredientsResult, ordersResult, adjustmentResult] = await Promise.all([
     getPaidMenuItemSales({ from: `${historyFrom}T00:00:00.000Z`, to: `${historyToExclusive}T00:00:00.000Z`, timeZone: tz }),
     listPlanningEvents({ from: dateString(today), to: horizonEnd }),
     supabase.from("menu_items").select("id,name,cost_price,is_active").eq("is_active", true).order("name"),
     supabase.from("menu_item_recipes").select("menu_item_id,ingredient_id,quantity_per_serving"),
     supabase.from("ingredients").select("id,name,base_unit,on_hand_quantity,par_level_quantity,unit_cost,supplier_id,lead_time_days,is_active,created_at,suppliers(id,name)").eq("is_active", true),
     supabase.from("orders").select("id,confirmed_at").eq("payment_status", "paid").not("order_status", "in", "(cancelled,expired)").gte("confirmed_at", `${historyFrom}T00:00:00.000Z`).lt("confirmed_at", `${historyToExclusive}T00:00:00.000Z`),
+    supabase.from("inventory_adjustments").select("ingredient_id,quantity_delta,reason,recorded_at").gte("recorded_at", addDays(today, -28).toISOString()),
   ]);
-  for (const result of [menuResult, recipeResult, ingredientsResult, ordersResult]) if (result.error) throw result.error;
+  for (const result of [menuResult, recipeResult, ingredientsResult, ordersResult, adjustmentResult]) if (result.error) throw result.error;
   const menuItems = menuResult.data || [];
   const events = eventsResult;
   const observedDays = 84;
@@ -82,12 +83,20 @@ export async function computePlanningFacts({ horizonDays, tz }) {
   const recipesByItem = new Map(); for (const recipe of recipeResult.data || []) { const lines = recipesByItem.get(recipe.menu_item_id) || []; lines.push(recipe); recipesByItem.set(recipe.menu_item_id, lines); }
   const ingredientForecasts = new Map();
   for (const forecast of forecasts) for (const recipe of recipesByItem.get(forecast.menuItemId) || []) ingredientForecasts.set(recipe.ingredient_id, (ingredientForecasts.get(recipe.ingredient_id) || 0) + forecast.quantity * number(recipe.quantity_per_serving));
+  const recentAdjustmentsByIngredient = new Map();
+  for (const adjustment of adjustmentResult.data || []) { const lines = recentAdjustmentsByIngredient.get(adjustment.ingredient_id) || []; lines.push(adjustment); recentAdjustmentsByIngredient.set(adjustment.ingredient_id, lines); }
   const restockBySupplier = new Map(); const alerts = []; const setupWarnings = [];
   for (const ingredient of ingredientsResult.data || []) {
     const stock = await getIngredientStock(ingredient.id, ingredient); const dailyUse = (ingredientForecasts.get(ingredient.id) || 0) / horizonDays; const leadUse = dailyUse * number(ingredient.lead_time_days); const required = leadUse + number(ingredient.par_level_quantity); const buy = Math.max(0, required - stock.calculatedOnHand);
     const urgency = stock.calculatedOnHand < 0 || stock.calculatedOnHand - leadUse <= 0 ? "critical" : buy > 0 ? "high" : stock.calculatedOnHand < dailyUse * 30 + number(ingredient.par_level_quantity) ? "monitor" : null;
     if (!ingredient.supplier_id) setupWarnings.push({ type: "missing_supplier", entityId: ingredient.id, message: `${ingredient.name} needs a supplier.` });
     if (!number(ingredient.par_level_quantity)) setupWarnings.push({ type: "missing_par_level", entityId: ingredient.id, message: `${ingredient.name} has no par level.` });
+    if (!stock.latestPhysicalCountAt || new Date(stock.latestPhysicalCountAt) < addDays(today, -7)) setupWarnings.push({ type: "stale_count", entityId: ingredient.id, message: `${ingredient.name} needs a physical count.` });
+    const recentAdjustments = recentAdjustmentsByIngredient.get(ingredient.id) || [];
+    const wastage = recentAdjustments.filter((entry) => entry.reason === "wastage").reduce((sum, entry) => sum + Math.abs(number(entry.quantity_delta)), 0);
+    const recordedOutgoing = recentAdjustments.filter((entry) => number(entry.quantity_delta) < 0).reduce((sum, entry) => sum + Math.abs(number(entry.quantity_delta)), 0) + dailyUse * 28;
+    if (recordedOutgoing > 0 && wastage / recordedOutgoing >= 0.1) alerts.push({ type: "waste_watch", severity: "monitor", recommendationKey: keyFor("waste", ingredient.id, wastage), message: `${ingredient.name} has elevated recorded wastage.` });
+    if (dailyUse > 0 && stock.calculatedOnHand > dailyUse * 30) alerts.push({ type: "slow_moving_stock", severity: "monitor", recommendationKey: keyFor("slow", ingredient.id, stock.calculatedOnHand), message: `${ingredient.name} exceeds 30 days of projected use.` });
     if (urgency) { const row = { ingredientId: ingredient.id, ingredientName: ingredient.name, baseUnit: ingredient.base_unit, calculatedOnHand: stock.calculatedOnHand, projectedLeadTimeUse: leadUse, parLevelQuantity: number(ingredient.par_level_quantity), recommendedPurchaseQuantity: buy, leadTimeDays: ingredient.lead_time_days, estimatedCost: buy * number(ingredient.unit_cost), urgency, recommendationKey: keyFor("restock", ingredient.id, dateString(today), stock.calculatedOnHand, buy) }; const supplierKey = ingredient.supplier_id || "missing"; const group = restockBySupplier.get(supplierKey) || { supplierId: ingredient.supplier_id, supplierName: ingredient.suppliers?.name || "Needs supplier setup", items: [] }; group.items.push(row); restockBySupplier.set(supplierKey, group); alerts.push({ type: "stock", severity: urgency, recommendationKey: row.recommendationKey, message: `${urgency === "critical" ? "Buy" : "Plan"} ${Math.ceil(buy)} ${ingredient.base_unit} ${ingredient.name}.` }); }
   }
   for (const item of menuItems) if (!recipesByItem.has(item.id)) setupWarnings.push({ type: "missing_recipe", entityId: item.id, message: `${item.name} has no recipe.` });
