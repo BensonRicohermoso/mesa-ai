@@ -1,5 +1,6 @@
 import { supabase } from "../../config/supabase.js";
 import { createAuthError } from "../../lib/errors.js";
+import { getPaidIngredientConsumption } from "./paid-sales.service.js";
 
 const supplierFields = "id,name,contact_name,phone,email,is_active,created_at,updated_at";
 const ingredientFields = "id,name,base_unit,on_hand_quantity,par_level_quantity,unit_cost,supplier_id,lead_time_days,is_active,created_at,updated_at,suppliers(id,name,is_active)";
@@ -120,13 +121,10 @@ export function calculateStockLedger({ openingQuantity, adjustments, sales }) {
 }
 
 async function loadIngredientSales(ingredientId, since) {
-  const { data: recipes, error: recipeError } = await supabase.from("menu_item_recipes").select("menu_item_id,quantity_per_serving").eq("ingredient_id", ingredientId);
-  if (recipeError) throw recipeError;
-  if (!recipes?.length) return [];
-  const recipeByItem = new Map(recipes.map((recipe) => [recipe.menu_item_id, number(recipe.quantity_per_serving)]));
-  const { data, error } = await supabase.from("order_items").select("id,menu_item_id,quantity,orders!inner(payment_status,order_status,confirmed_at)").in("menu_item_id", [...recipeByItem.keys()]).eq("orders.payment_status", "paid").gte("orders.confirmed_at", since);
-  if (error) throw error;
-  return (data || []).map((item) => ({ id: item.id, confirmedAt: item.orders.confirmed_at, quantity: number(item.quantity) * recipeByItem.get(item.menu_item_id) }));
+  const consumption = await getPaidIngredientConsumption({ from: since });
+  return consumption.ingredientConsumption
+    .filter((entry) => entry.ingredientId === ingredientId)
+    .map((entry) => ({ id: entry.id, confirmedAt: entry.confirmedAt, quantity: entry.quantity }));
 }
 export async function getIngredientStock(ingredientId, providedIngredient = null) {
   let ingredient = providedIngredient;
