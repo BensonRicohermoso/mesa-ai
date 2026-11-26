@@ -80,7 +80,7 @@ export async function getStaffList(_req, res, next) {
 export async function postPinSwitch(req, res, next) {
   try {
     const { pin, staffId } = req.body || {};
-    const result = await switchStaffByPin({ pin, staffId });
+    const result = await switchStaffByPin({ pin, staffId, sourceIp: req.ip });
     res.json(result);
   } catch (error) {
     next(error);
