@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "nodemon src/index.js",
     "start": "node src/index.js",
-    "test:db": "node scripts/test-db.js"
+    "test:db": "node scripts/test-db.js",
+    "test:critical": "node --test tests/critical-rules.test.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.78.0",

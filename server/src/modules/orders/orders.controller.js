@@ -43,7 +43,14 @@ export async function postOrder(req, res, next) {
 // Return one order by its human-readable order reference.
 export async function getOrder(req, res, next) {
   try {
-    const order = await getOrderByReference(req.params.orderRef);
+    const trackingToken = req.get("x-order-tracking-token") || req.query.token;
+    if (typeof trackingToken !== "string" || !/^[0-9a-f-]{36}$/i.test(trackingToken)) {
+      const error = new Error("A valid order tracking token is required.");
+      error.statusCode = 403;
+      error.code = "ORDER_TRACKING_FORBIDDEN";
+      throw error;
+    }
+    const order = await getOrderByReference(req.params.orderRef, trackingToken);
     if (!order) {
       const error = new Error("Order not found.");
       error.statusCode = 404;

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { TwinOrbit } from '../../../shared/components/TwinOrbit.jsx'
 import { useAuth } from '../../../context/useAuth.js'
 import {
   getStaff,
@@ -129,7 +130,7 @@ export function StaffManagement() {
   if (loading) {
     return (
       <div className="mgmt-loading">
-        <p>Loading staff roster…</p>
+        <TwinOrbit size="1.1rem" label="Loading staff roster" />
       </div>
     )
   }

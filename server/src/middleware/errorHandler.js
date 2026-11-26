@@ -1,5 +1,7 @@
 // Convert application and unexpected errors into a safe API response.
-export function errorHandler(error, _req, res, _next) {
+import { reportError } from "./observability.js";
+
+export function errorHandler(error, req, res, _next) {
   const statusCode =
     Number.isInteger(error.statusCode) &&
     error.statusCode >= 400 &&
@@ -14,6 +16,7 @@ export function errorHandler(error, _req, res, _next) {
         ? "INTERNAL_ERROR"
         : "REQUEST_ERROR";
 
+  if (statusCode >= 500) reportError(error, req);
   res.status(statusCode).json({
     error: {
       code,

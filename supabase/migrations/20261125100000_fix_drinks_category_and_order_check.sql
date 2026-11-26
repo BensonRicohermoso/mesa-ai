@@ -84,6 +84,7 @@ BEGIN
       'preparingAt', v_existing_order.preparing_at,
       'readyAt', v_existing_order.ready_at,
       'completedAt', v_existing_order.completed_at,
+      'trackingToken', v_existing_order.tracking_token,
       'table', jsonb_build_object(
         'code', v_existing_order.table_code,
         'label', v_existing_order.label
@@ -308,6 +309,7 @@ BEGIN
     'preparingAt', NULL,
     'readyAt', NULL,
     'completedAt', NULL,
+    'trackingToken', (SELECT tracking_token FROM public.orders WHERE id = v_order_id),
     'table', jsonb_build_object(
       'code', p_table_code,
       'label', v_table_label

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { TwinOrbit } from '../../../shared/components/TwinOrbit.jsx'
 import {
   getTables,
   createTable,
@@ -130,7 +131,7 @@ export function TableManagement() {
   if (loading) {
     return (
       <div className="mgmt-loading">
-        <p>Loading dining tables…</p>
+        <TwinOrbit size="1.1rem" label="Loading dining tables" />
       </div>
     )
   }

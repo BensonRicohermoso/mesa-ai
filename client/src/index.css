@@ -11,6 +11,11 @@
   --light-gray: #eaeaea;
   --muted-gray: #858585;
   --dark-surface: #0a0a0a;
+  --mesa-brass: #d4a85f;
+  --mesa-brass-soft: rgba(212, 168, 95, 0.16);
+  --mesa-line: rgba(255, 255, 255, 0.11);
+  --motion-spring: cubic-bezier(0.22, 1, 0.36, 1);
+  --motion-snappy: cubic-bezier(0.2, 0.8, 0.2, 1);
 
   font-family: var(--font-sans);
   color: var(--black);
@@ -39,4 +44,33 @@ select:focus-visible,
 textarea:focus-visible {
   outline: 1px solid var(--black);
   outline-offset: 2px;
+}
+
+button,
+a,
+input,
+select,
+textarea {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:not(:disabled),
+[role='button']:not([aria-disabled='true']) {
+  transition: transform 180ms var(--motion-spring), filter 180ms ease;
+}
+
+button:not(:disabled):active,
+[role='button']:not([aria-disabled='true']):active {
+  transform: scale(0.975);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
 }

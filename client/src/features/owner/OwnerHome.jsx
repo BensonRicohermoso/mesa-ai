@@ -1,15 +1,17 @@
-import { useState, useCallback } from 'react'
+import { lazy, Suspense, useState, useCallback } from 'react'
 import { useAuth } from '../../context/useAuth.js'
 import { PinPadModal } from '../auth/PinPadModal.jsx'
-import { MenuManagement } from './components/MenuManagement.jsx'
-import { TableManagement } from './components/TableManagement.jsx'
-import { StaffManagement } from './components/StaffManagement.jsx'
 import { StationSettingsModal } from './components/StationSettingsModal.jsx'
 import { AnalyticsToolbar } from './components/AnalyticsToolbar.jsx'
-import { OwnerDashboard } from './components/OwnerDashboard.jsx'
-import { AnalyticsReports } from './components/AnalyticsReports.jsx'
 import { getPresetDateRange } from './utils/analyticsFormatters.js'
 import './owner.css'
+
+const MenuManagement = lazy(() => import('./components/MenuManagement.jsx').then((m) => ({ default: m.MenuManagement })))
+const TableManagement = lazy(() => import('./components/TableManagement.jsx').then((m) => ({ default: m.TableManagement })))
+const StaffManagement = lazy(() => import('./components/StaffManagement.jsx').then((m) => ({ default: m.StaffManagement })))
+const OwnerDashboard = lazy(() => import('./components/OwnerDashboard.jsx').then((m) => ({ default: m.OwnerDashboard })))
+const AnalyticsReports = lazy(() => import('./components/AnalyticsReports.jsx').then((m) => ({ default: m.AnalyticsReports })))
+const AiAdvisor = lazy(() => import('./components/AiAdvisor.jsx').then((m) => ({ default: m.AiAdvisor })))
 
 const TABS = [
   { key: 'overview', label: '01 · Overview' },
@@ -17,6 +19,7 @@ const TABS = [
   { key: 'tables', label: '03 · Table Suite' },
   { key: 'staff', label: '04 · Staff Roster' },
   { key: 'reports', label: '05 · Analytics & Reports' },
+  { key: 'ai', label: '06 · AI Advisor', adminOnly: true },
 ]
 
 function buildDefaultFilter(sourceMode = 'live') {
@@ -60,11 +63,29 @@ export function OwnerHome() {
     setAnalyticsFilter((prev) => buildDefaultFilter(prev.sourceMode))
   }, [])
 
-  const showToolbar = activeTab === 'overview' || activeTab === 'reports'
+  const isAdmin = (session?.staff?.role || 'admin') === 'admin'
+  const visibleTabs = TABS.filter((tab) => !tab.adminOnly || isAdmin)
+  const showToolbar = activeTab === 'overview' || activeTab === 'reports' || activeTab === 'ai'
 
   return (
     <main className="owner-shell">
-      <div className="owner-container">
+      <div className="owner-workspace">
+        <nav className="owner-rail" aria-label="Workspace sections">
+          {visibleTabs.map((tab) => (
+            <button
+              key={tab.key}
+              className={`owner-rail-item ${activeTab === tab.key ? 'owner-rail-item--active' : ''}`}
+              type="button"
+              onClick={() => setActiveTab(tab.key)}
+              aria-current={activeTab === tab.key ? 'page' : undefined}
+            >
+              <span className="owner-rail-index">{tab.label.slice(0, 2)}</span>
+              <span className="owner-rail-label">{tab.label.slice(5)}</span>
+            </button>
+          ))}
+        </nav>
+
+        <div className="owner-container">
         <section className="owner-card">
           {/* ── Header Bar ──────────────────────────────────────── */}
           <header className="owner-header-bar">
@@ -104,19 +125,9 @@ export function OwnerHome() {
           </header>
 
           {/* ── Tab Navigation ──────────────────────────────────── */}
-          <nav className="owner-tabs">
-            {TABS.map((tab) => (
-              <button
-                key={tab.key}
-                className={`owner-tab ${activeTab === tab.key ? 'owner-tab--active' : ''}`}
-                onClick={() => setActiveTab(tab.key)}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </nav>
-
           {/* ── Analytics Toolbar (shared by Overview & Reports) ── */}
+          <div className="owner-content-transition" key={activeTab}>
+          <Suspense fallback={<div className="mgmt-empty" role="status">Loading section…</div>}>
           {showToolbar && (
             <AnalyticsToolbar
               filter={analyticsFilter}
@@ -153,7 +164,19 @@ export function OwnerHome() {
             />
           )}
 
+          {activeTab === 'ai' && isAdmin && (
+            <AiAdvisor
+              filter={analyticsFilter}
+              refreshNonce={refreshNonce}
+              onSwitchToPreview={handleSwitchToPreview}
+              onLoadingChange={setIsAnalyticsLoading}
+            />
+          )}
+          </Suspense>
+
           {/* ── Compact Station Footer Strip ──────────────────── */}
+          </div>
+
           <footer className="owner-station-strip no-print">
             <span className="owner-station-meta">
               {session?.staff?.fullName || 'Operator'} &bull;{' '}
@@ -165,6 +188,7 @@ export function OwnerHome() {
             </button>
           </footer>
         </section>
+        </div>
       </div>
 
       {/* PIN Shift Switch Modal */}

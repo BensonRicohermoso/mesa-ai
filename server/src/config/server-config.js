@@ -22,6 +22,10 @@ if (missingVariables.length > 0) {
   );
 }
 
+if (process.env.NODE_ENV === "production" && (!process.env.CLIENT_URL || !/^https:\/\//i.test(process.env.CLIENT_URL.trim()))) {
+  throw new Error("CLIENT_URL must be an HTTPS origin in production.");
+}
+
 export const env = {
   PORT: process.env.PORT || "5000",
   CLIENT_URL:
@@ -35,6 +39,9 @@ export const env = {
   SUPABASE_SERVICE_ROLE_KEY: supabaseServerKey,
   DATABASE_URL: process.env.DATABASE_URL,
   GEMINI_API_KEY: process.env.GEMINI_API_KEY,
+  GEMINI_MODEL:
+    (process.env.GEMINI_MODEL || "gemini-2.5-flash").trim() ||
+    "gemini-2.5-flash",
   ORDER_EXPIRY_MINUTES: (() => {
     const parsed = Number.parseInt(process.env.ORDER_EXPIRY_MINUTES || "20", 10);
     return Number.isInteger(parsed) && parsed > 0 ? parsed : 20;
