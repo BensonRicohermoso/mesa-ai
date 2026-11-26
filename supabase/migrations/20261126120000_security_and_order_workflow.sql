@@ -96,6 +96,9 @@ END;
 $$;
 REVOKE ALL ON FUNCTION public.set_staff_pin(uuid, text) FROM PUBLIC;
 
+-- Ensure PostgREST sees the PIN RPC signatures immediately after this migration.
+NOTIFY pgrst, 'reload schema';
+
 CREATE OR REPLACE FUNCTION public.expire_unpaid_orders()
 RETURNS integer LANGUAGE plpgsql SECURITY DEFINER SET search_path = public
 AS $$

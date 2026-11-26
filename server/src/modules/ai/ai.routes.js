@@ -1,5 +1,5 @@
 import express from "express";
-import rateLimit from "express-rate-limit";
+import rateLimit, { ipKeyGenerator } from "express-rate-limit";
 import { authenticate, requireRoles } from "../../middleware/auth.js";
 import {
   getAiStatus,
@@ -15,7 +15,9 @@ const aiRateLimiter = rateLimit({
   max: 30,
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req) => req.auth?.staff?.id || req.ip,
+  // Admin accounts are the normal key. Keep the package's IPv6-safe subnet
+  // normalization for the (rare) unauthenticated fallback.
+  keyGenerator: (req) => req.auth?.staff?.id ?? ipKeyGenerator(req.ip),
   handler: (_req, res) => {
     res.status(429).json({
       error: {
