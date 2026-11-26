@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+/* oxlint-disable react/set-state-in-effect -- selected recipe is loaded from the API after menu selection. */
+import { useCallback, useEffect, useState } from 'react'
 import { formatPhp } from '../utils/analyticsFormatters.js'
 import { getMenuItems } from '../../../shared/api/menuApi.js'
 import { addAdjustment, createIngredient, createSupplier, getIngredients, getRecipe, getSuppliers, putRecipe } from '../../../shared/api/inventoryApi.js'
