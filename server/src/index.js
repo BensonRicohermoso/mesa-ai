@@ -1,5 +1,8 @@
 import "dotenv/config";
+import dns from "node:dns";
 import cors from "cors";
+
+dns.setDefaultResultOrder("ipv4first");
 import express from "express";
 import { env } from "./config/server-config.js";
 import authRoutes from "./modules/auth/auth.routes.js";
