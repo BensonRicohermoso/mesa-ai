@@ -423,6 +423,19 @@ Returns backend baseline projections (`horizonDays`: 1–30, default 7) and read
 
 **Response `200`:**
 - `facts`: `{ range, forecast: { horizonDays, observedDays, expectedOrders, expectedGrossSales, expectedGrossProfit, expectedGrossMarginPct, peakHours[] }, menuEngineering }`
+
+### Inventory planning (admin only)
+
+All planning and planning-event endpoints require an authenticated `admin`; other
+staff roles receive `403 ROLE_FORBIDDEN`.
+
+- `GET/POST /api/advisor/planning-events` lists overlapping events (`?from=YYYY-MM-DD&to=YYYY-MM-DD`) or creates `{ title, eventType, startsOn, endsOn, demandAdjustmentPct, note? }`.
+- `PATCH/DELETE /api/advisor/planning-events/:id` updates or removes an event. `eventType` is `promotion`, `holiday`, `closure`, or `large_order`; demand adjustment is `-100` through `500`, and closures must use `-100`.
+- `POST /api/ai/planning` accepts `{ horizonDays: 30|60|90, tz: "Asia/Manila", sourceMode?: "live"|"preview", forceRefresh?: boolean }`. It returns deterministic `facts` (forecast, daily prep, supplier-grouped restock, alerts, and setup warnings), a deterministic interpretation, and cache metadata.
+- `POST /api/ai/planning/recommendations/:key/acknowledgements` records an optional `{ note }` without changing the recommendation or its calculation.
+- `GET /api/ai/planning/export?type=prep|purchase&date=YYYY-MM-DD` returns CSV. Prep exports menu item, forecast, target, and direction; purchase exports supplier, quantities, lead-time requirements, and estimated cost.
+
+Validation errors use `400 VALIDATION_ERROR`; unavailable event IDs use `404 PLANNING_EVENT_NOT_FOUND`. Missing inventory configuration is returned in `facts.setupWarnings`, not as a server error.
 - `interpretation`: `{ outlookSummary, peakHourAdvice, recommendations[] }`
 - `meta`: `{ source: "gemini" | "fallback", model, generatedAt, cached, sourceMode }`
 

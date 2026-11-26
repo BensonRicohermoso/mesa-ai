@@ -261,6 +261,32 @@ const SYSTEM_RULES = [
   "Do not suggest or claim to execute automatic database or menu edits.",
 ].join(" ");
 
+const PLANNING_BANNED_PHRASES = /\b(net\s+(profit|margin)|ordered|order has been placed|adjusted stock|stock was adjusted|consumed stock|automatic(?:ally)?\s+order)\b/i;
+const NUMBER_RE = /\d/;
+
+export function buildFallbackPlanningInterpretation(facts) {
+  const forecast = facts.forecast || {};
+  const topAlerts = (facts.alerts || []).slice(0, 5);
+  const summary = topAlerts.length
+    ? `Forecast: PHP ${Number(forecast.expectedGrossProfit || 0).toLocaleString("en-PH")} gross profit at ${Number(forecast.expectedGrossMarginPct || 0).toFixed(1)}% gross margin. Review the highest-priority verified stock and setup actions below.`
+    : `Forecast: PHP ${Number(forecast.expectedGrossProfit || 0).toLocaleString("en-PH")} gross profit at ${Number(forecast.expectedGrossMarginPct || 0).toFixed(1)}% gross margin. No critical stock action is currently calculated.`;
+  return { summary, prioritizedActions: topAlerts.map((alert) => ({ recommendationKey: alert.recommendationKey, text: alert.message, severity: alert.severity })) };
+}
+
+/** Gemini may choose and explain verified actions, but never supplies the facts or action quantities. */
+export function validatePlanningInterpretation(parsed, facts) {
+  if (typeof parsed?.summary !== "string" || !parsed.summary.trim() || parsed.summary.length > 600) return null;
+  const summary = parsed.summary.trim();
+  // Keep free-form prose qualitative; quantities and operational actions come
+  // from the deterministic facts so Gemini cannot fabricate them.
+  if (PLANNING_BANNED_PHRASES.test(summary) || NUMBER_RE.test(summary)) return null;
+  const available = new Map((facts.alerts || []).map((alert) => [alert.recommendationKey, alert]));
+  const requestedKeys = Array.isArray(parsed.prioritizedRecommendationKeys) ? parsed.prioritizedRecommendationKeys : [];
+  if (requestedKeys.length > 5 || requestedKeys.some((key) => typeof key !== "string" || !available.has(key))) return null;
+  const uniqueKeys = [...new Set(requestedKeys)];
+  return { summary, prioritizedActions: uniqueKeys.map((key) => { const action = available.get(key); return { recommendationKey: key, text: action.message, severity: action.severity }; }) };
+}
+
 export function createAiService({
   gemini = geminiClient,
   analytics = null,
@@ -331,6 +357,32 @@ export function createAiService({
   }
 
   return {
+    async interpretPlanning(facts) {
+      let source = "fallback";
+      let fallbackReason = gemini.isConfigured ? null : "GEMINI_NOT_CONFIGURED";
+      let interpretation = null;
+      const compactFacts = {
+        forecast: facts.forecast,
+        alerts: (facts.alerts || []).slice(0, 10).map(({ recommendationKey, severity, message }) => ({ recommendationKey, severity, message })),
+        setupWarnings: (facts.setupWarnings || []).slice(0, 10).map(({ type, message }) => ({ type, message })),
+      };
+      if (gemini.isConfigured) {
+        try {
+          const parsed = await gemini.generateJson({
+            systemInstruction: `${SYSTEM_RULES} For planning, distinguish forecasts from suggested actions. Never claim stock was ordered, adjusted, or consumed. Do not mention net profit. Return JSON only: {"summary":"qualitative executive summary without numbers","prioritizedRecommendationKeys":["verified key"]}. Return no more than five keys and only keys supplied in verified facts.`,
+            contents: `Explain these verified planning facts. Do not introduce quantities, names, actions, or claims not present in the JSON.\n${JSON.stringify(compactFacts)}`,
+          });
+          interpretation = validatePlanningInterpretation(parsed, facts);
+          if (interpretation) { source = "gemini"; fallbackReason = null; }
+          else fallbackReason = "GEMINI_UNSAFE_OR_INVALID_PLANNING_OUTPUT";
+        } catch (error) {
+          fallbackReason = error?.code || "GEMINI_ERROR";
+          console.warn("[ai] Planning interpretation fallback:", fallbackReason, error?.message);
+        }
+      }
+      if (!interpretation) interpretation = buildFallbackPlanningInterpretation(facts);
+      return { interpretation, meta: { source, ...(fallbackReason ? { fallbackReason } : {}), model: gemini.model } };
+    },
     getStatus() {
       return {
         configured: Boolean(gemini.isConfigured),

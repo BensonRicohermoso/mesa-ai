@@ -14,6 +14,7 @@ import aiRoutes from "./modules/ai/ai.routes.js";
 import paymentsRoutes from "./modules/payments/payments.routes.js";
 import kitchenRoutes from "./modules/kitchen/kitchen.routes.js";
 import inventoryRoutes from "./modules/inventory/inventory.routes.js";
+import advisorRoutes from "./modules/advisor/planning-events.routes.js";
 import { requestLogger } from "./middleware/observability.js";
 import {
   errorHandler,
@@ -52,6 +53,7 @@ app.use("/api/ai", aiRoutes);
 app.use("/api/payments", paymentsRoutes);
 app.use("/api/kitchen", kitchenRoutes);
 app.use("/api/inventory", inventoryRoutes);
+app.use("/api/advisor", advisorRoutes);
 app.use(notFoundHandler);
 app.use(errorHandler);
 
