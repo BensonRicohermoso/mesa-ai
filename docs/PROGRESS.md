@@ -1,6 +1,6 @@
 # MESA-AI Progress
 
-**Last updated:** 2026-11-25
+**Last updated:** 2026-11-27
 
 MESA-AI currently has the repository structure, Supabase setup, seven applied database migrations (plus two pending migrations: `20261124100000_staff_pin.sql` and `20261125100000_fix_drinks_category_and_order_check.sql`), a development menu-and-table seed, and a fully tested customer ordering API for menu lookup, table lookup, order creation, idempotency, validation failures, and order retrieval. Customer UI and the remaining fulfillment, analytics, management, and deployment work are still ahead.
 
@@ -64,12 +64,12 @@ MESA-AI currently has the repository structure, Supabase setup, seven applied da
 - [x] Consume Dev 1 analytics APIs; do not duplicate analytics calculations in Dev 2 code. _(Live API integration pending Dev 1; preview fixtures available via toggle.)_
 - [x] Use only **gross profit** and **gross margin** terminology.
 
-### Gemini and AI features — Not started
+### Gemini and AI features — Done (Live analytics integration pending Dev 1)
 
-- [ ] Gemini server integration using `GEMINI_API_KEY`; never expose the key to the client.
-- [ ] Daily briefing and anomaly alerts with verified backend metrics and a demo fallback.
-- [ ] Forecast and recommendation UI backed by analytics data; AI explains results but does not automatically modify records.
-- [ ] Owner-only AI Q&A with bounded follow-up context and a clear separation of facts from interpretation.
+- [x] Gemini server integration using `GEMINI_API_KEY`; never expose the key to the client.
+- [x] Daily briefing and anomaly alerts with verified backend metrics and a demo fallback.
+- [x] Forecast and recommendation UI backed by analytics data; AI explains results but does not automatically modify records.
+- [x] Owner-only AI Q&A with bounded follow-up context and a clear separation of facts from interpretation.
 
 ### Dev 2 Branch Plan
 
@@ -78,7 +78,7 @@ MESA-AI currently has the repository structure, Supabase setup, seven applied da
 - [x] `feature/dev2-table-management`
 - [x] `feature/dev2-staff-management`
 - [x] `feature/dev2-owner-dashboard` (includes analytics & reports UI)
-- [ ] `feature/dev2-ai` (combines Gemini integration, daily insights, forecast & recommendations, and AI Q&A)
+- [x] `feature/dev2-ai` (combines Gemini integration, daily insights, forecast & recommendations, and AI Q&A)
 
 ## Next Up
 
@@ -90,6 +90,14 @@ Customer menu and cart UI at `/t/:tableCode`.
 - Google Sheet submission: December 5, 2026
 
 ## Changelog
+
+### 2026-11-27
+
+- Combined all planned AI work into `feature/dev2-ai` and documented the architecture, API contracts, and risk mitigations in `docs/AI_PLAN.md` and `docs/API.md`.
+- Implemented the server-only Gemini REST client (`server/src/modules/ai/gemini.client.js`) using `GEMINI_API_KEY` and configurable `GEMINI_MODEL` (`gemini-2.5-flash` default) with `12s` timeout and JSON fence cleanup.
+- Implemented `/api/ai` endpoints (`GET /status`, `POST /briefing`, `POST /forecast`, `POST /qna`) in `server/src/modules/ai/` with `admin` RBAC, per-staff rate limiting (30 req/min), bounded TTL + in-flight deduplication cache, backend anomaly/forecast math, Q&A bounds, and deterministic fallbacks.
+- Added `client/src/shared/api/aiApi.js` and the `06 · AI Advisor` tab (`client/src/features/owner/components/AiAdvisor.jsx`) with `Verified Backend Metrics` vs `AI Interpretation` separation, `Gemini Live` / `Fallback Mode` badges, `Preview` fixture support, and bounded Q&A.
+- Verified backend unit tests (`node --test tests/ai.test.js`: 9/9 passed), client production build (`vite build`), and linter (`oxlint`: 0 warnings, 0 errors).
 
 ### 2026-11-22
 

@@ -376,3 +376,67 @@ Returns paginated recent orders for the audit table.
 | `404` / `501` | Analytics module not yet deployed (triggers preview offer in UI) |
 | `400` | Invalid query parameters (bad dates, unknown filter) |
 | `500` | Unexpected server error |
+
+---
+
+## Owner AI Advisor Endpoints (Dev 2)
+
+All `/api/ai/*` endpoints require a valid Bearer token with `admin` role (`authenticate`, `requireRoles("admin")`) and are rate-limited to 30 requests/minute per staff account.
+
+### `GET /api/ai/status`
+Returns server AI readiness without exposing `GEMINI_API_KEY`.
+
+**Response `200`:**
+```json
+{
+  "configured": true,
+  "model": "gemini-2.5-flash",
+  "mode": "gemini",
+  "cacheEntries": 2
+}
+```
+
+### `POST /api/ai/briefing`
+Returns verified backend KPIs, anomaly flags, and a Gemini-generated (or deterministic fallback) executive briefing.
+
+**Request Body:**
+```json
+{
+  "from": "2026-11-19",
+  "to": "2026-11-25",
+  "tz": "Asia/Manila",
+  "compare": true,
+  "categoryId": "all",
+  "paymentMethod": "all",
+  "sourceMode": "preview",
+  "forceRefresh": false
+}
+```
+
+**Response `200`:**
+- `facts`: `{ range, kpis, deltasPct, anomalies: { cancellationRatePct, flags[] }, performance }`
+- `interpretation`: `{ summary, alerts[], watchItems[] }`
+- `meta`: `{ source: "gemini" | "fallback", model, generatedAt, cached, sourceMode }`
+
+### `POST /api/ai/forecast`
+Returns backend baseline projections (`horizonDays`: 1–30, default 7) and read-only menu/promo recommendations.
+
+**Response `200`:**
+- `facts`: `{ range, forecast: { horizonDays, observedDays, expectedOrders, expectedGrossSales, expectedGrossProfit, expectedGrossMarginPct, peakHours[] }, menuEngineering }`
+- `interpretation`: `{ outlookSummary, peakHourAdvice, recommendations[] }`
+- `meta`: `{ source: "gemini" | "fallback", model, generatedAt, cached, sourceMode }`
+
+### `POST /api/ai/qna`
+Owner-only Q&A grounded in verified metrics. Validates `question` (required, max 500 chars) and caps `history` to the last 6 turns.
+
+**Response `200`:**
+- `answer`: Plain-text explanation using gross profit / gross margin terminology.
+- `dataUsed`: Compact verified metrics snapshot used to answer.
+- `meta`: `{ source: "gemini" | "fallback", model, generatedAt, sourceMode }`
+
+### AI Error Codes
+- `400 INVALID_DATE_RANGE` / `QUESTION_REQUIRED` / `QUESTION_TOO_LONG`
+- `401 AUTH_TOKEN_MISSING` / `AUTH_TOKEN_INVALID`
+- `403 ROLE_FORBIDDEN`
+- `429 RATE_LIMITED`
+- `501 ANALYTICS_NOT_READY` (returned when `sourceMode === "live"` before Dev 1's analytics module is implemented)

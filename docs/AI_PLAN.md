@@ -2,7 +2,7 @@
 
 **Branch:** `feature/dev2-ai`  
 **Owner:** Dev 2 (`server/src/modules/ai`, `client/src/features/owner`)  
-**Status:** Planned  
+**Status:** Implemented on `feature/dev2-ai` (Preview mode verified; Live analytics pending Dev 1)  
 
 This document defines the unified plan for all Dev 2 AI features (Gemini integration, daily briefing & anomaly alerts, forecast & recommendations, and owner-only AI Q&A), along with architectural safeguards and predicted bugs to prevent during implementation.
 
@@ -152,4 +152,4 @@ Response (`200`):
 - [x] **Step 3:** Implement `server/src/modules/ai/ai.controller.js` and `ai.routes.js` (rate limiting + `admin` RBAC), and mount `/api/ai` in `server/src/index.js`.
 - [x] **Step 4:** Add automated tests in `server/tests/ai.test.js` and verify all pass.
 - [x] **Step 5:** Add `client/src/shared/api/aiApi.js` and `06 · AI Advisor` UI in `client/src/features/owner/`.
-- [ ] **Step 6:** Update `docs/API.md` and `docs/PROGRESS.md` once verified.
+- [x] **Step 6:** Update `docs/API.md` and `docs/PROGRESS.md` once verified.
