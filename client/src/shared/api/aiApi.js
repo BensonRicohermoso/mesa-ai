@@ -39,3 +39,7 @@ export function acknowledgePlanningRecommendation(key, note = '') {
     method: 'POST', body: JSON.stringify({ note }),
   })
 }
+
+export function getPlanningAcknowledgements() {
+  return request('/planning/acknowledgements', { method: 'GET' })
+}

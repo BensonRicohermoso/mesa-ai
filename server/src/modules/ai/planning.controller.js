@@ -12,6 +12,15 @@ export async function acknowledgeRecommendation(req, res, next) { try {
   if (error) throw error;
   res.status(201).json({ id: data.id, recommendationKey: data.recommendation_key, acknowledgedBy: data.acknowledged_by, acknowledgedAt: data.acknowledged_at, note: data.note });
 } catch (error) { next(error); } }
+export async function getAcknowledgedRecommendations(req, res, next) { try {
+  const { data, error } = await supabase
+    .from("advisor_recommendation_acknowledgements")
+    .select("recommendation_key,acknowledged_at,note")
+    .eq("acknowledged_by", req.auth.staff.id)
+    .order("acknowledged_at", { ascending: false });
+  if (error) throw error;
+  res.json({ acknowledgements: (data || []).map((row) => ({ recommendationKey: row.recommendation_key, acknowledgedAt: row.acknowledged_at, note: row.note })) });
+} catch (error) { next(error); } }
 export async function exportPlanning(req, res, next) { try {
   const type = req.query.type; const date = req.query.date;
   if (!["prep", "purchase"].includes(type)) throw createAuthError(400, "VALIDATION_ERROR", "type must be prep or purchase.");
