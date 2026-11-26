@@ -83,6 +83,19 @@ END;
 $$;
 REVOKE ALL ON FUNCTION public.verify_staff_pin(text, uuid, inet) FROM PUBLIC;
 
+CREATE OR REPLACE FUNCTION public.set_staff_pin(p_staff_id uuid, p_pin text)
+RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path = public
+AS $$
+BEGIN
+  IF p_pin !~ '^\\d{4}$' THEN RAISE EXCEPTION 'INVALID_PIN'; END IF;
+  UPDATE public.staff_profiles
+  SET pin_hash = crypt(p_pin, gen_salt('bf', 12)), pin_failed_attempts = 0, pin_locked_until = NULL
+  WHERE id = p_staff_id;
+  INSERT INTO public.staff_pin_audit_events(staff_id, event_type) VALUES (p_staff_id, 'reset');
+END;
+$$;
+REVOKE ALL ON FUNCTION public.set_staff_pin(uuid, text) FROM PUBLIC;
+
 CREATE OR REPLACE FUNCTION public.expire_unpaid_orders()
 RETURNS integer LANGUAGE plpgsql SECURITY DEFINER SET search_path = public
 AS $$
