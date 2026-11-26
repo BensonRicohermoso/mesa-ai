@@ -147,9 +147,9 @@ Response (`200`):
 
 ## 5. Execution Checklist
 
-- [ ] **Step 1:** Add `server/src/modules/ai/gemini.client.js` (REST/SDK call, timeout, JSON cleanup).
-- [ ] **Step 2:** Implement `server/src/modules/ai/ai.service.js` (metrics adapter, anomaly flags, TTL cache, fallback generator, Q&A bounds).
-- [ ] **Step 3:** Implement `server/src/modules/ai/ai.controller.js` and `ai.routes.js` (rate limiting + `admin` RBAC), and mount `/api/ai` in `server/src/index.js`.
-- [ ] **Step 4:** Add automated tests in `server/tests/ai.test.js` and verify all pass.
-- [ ] **Step 5:** Add `client/src/shared/api/aiApi.js` and `06 · AI Advisor` UI in `client/src/features/owner/`.
+- [x] **Step 1:** Add `server/src/modules/ai/gemini.client.js` (REST/SDK call, timeout, JSON cleanup).
+- [x] **Step 2:** Implement `server/src/modules/ai/ai.service.js` (metrics adapter, anomaly flags, TTL cache, fallback generator, Q&A bounds).
+- [x] **Step 3:** Implement `server/src/modules/ai/ai.controller.js` and `ai.routes.js` (rate limiting + `admin` RBAC), and mount `/api/ai` in `server/src/index.js`.
+- [x] **Step 4:** Add automated tests in `server/tests/ai.test.js` and verify all pass.
+- [x] **Step 5:** Add `client/src/shared/api/aiApi.js` and `06 · AI Advisor` UI in `client/src/features/owner/`.
 - [ ] **Step 6:** Update `docs/API.md` and `docs/PROGRESS.md` once verified.

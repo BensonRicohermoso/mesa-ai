@@ -94,6 +94,7 @@ export function AiAdvisor({
   useEffect(() => {
     const ac = new AbortController()
     const isManualRefresh = refreshNonce > 0 || localRetryCount > 0
+    // oxlint-disable-next-line react/set-state-in-effect -- async fetch is the standard pattern
     fetchInsights(ac.signal, isManualRefresh)
     return () => ac.abort()
   }, [fetchInsights, refreshNonce, localRetryCount])
