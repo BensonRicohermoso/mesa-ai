@@ -3,6 +3,8 @@
 ## Before release
 
 - [ ] Apply Supabase migrations in numeric order, including `20261124100000_staff_pin.sql`, `20261125100000_fix_drinks_category_and_order_check.sql`, and `20261126120000_security_and_order_workflow.sql`.
+- [ ] Apply `20261127100000_inventory_advisor_foundation.sql` and `20261127110000_inventory_recipe_replacement.sql` before enabling Owner Planning.
+- [ ] Follow the configuration and release gate in `docs/INVENTORY_ADVISOR_RELEASE.md`; keep Planning owner/admin-only until recipes and counts are complete.
 - [ ] Confirm every public URL uses HTTPS. Camera/QR features require it outside localhost.
 - [ ] Set `NODE_ENV=production` and an exact HTTPS `CLIENT_URL`; verify the browser Origin is accepted by CORS.
 - [ ] Set `SUPABASE_URL` and `SUPABASE_SECRET_KEY` (or legacy service-role key) only in the server host’s secret store. Never expose either to Vite.

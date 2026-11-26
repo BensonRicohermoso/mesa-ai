@@ -7,6 +7,7 @@ import {
   postAiForecast,
   postAiQna,
 } from "./ai.controller.js";
+import { acknowledgeRecommendation, exportPlanning, getAcknowledgedRecommendations, postPlanning } from "./planning.controller.js";
 
 const router = express.Router();
 
@@ -35,5 +36,9 @@ router.get("/status", getAiStatus);
 router.post("/briefing", postAiBriefing);
 router.post("/forecast", postAiForecast);
 router.post("/qna", postAiQna);
+router.post("/planning", postPlanning);
+router.get("/planning/acknowledgements", getAcknowledgedRecommendations);
+router.post("/planning/recommendations/:key/acknowledgements", acknowledgeRecommendation);
+router.get("/planning/export", exportPlanning);
 
 export default router;

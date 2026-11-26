@@ -1,0 +1,10 @@
+import express from "express";
+import { authenticate, requireRoles } from "../../middleware/auth.js";
+import { getPlanningEvents, patchPlanningEvent, postPlanningEvent, removePlanningEvent } from "./planning-events.controller.js";
+const router = express.Router();
+router.use(authenticate, requireRoles("admin"));
+router.get("/planning-events", getPlanningEvents);
+router.post("/planning-events", postPlanningEvent);
+router.patch("/planning-events/:id", patchPlanningEvent);
+router.delete("/planning-events/:id", removePlanningEvent);
+export default router;

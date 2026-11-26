@@ -8,6 +8,7 @@ import {
   computeAnomalyFlags,
   computeBaselineForecast,
   createAiService,
+  buildFallbackPlanningInterpretation,
 } from "../src/modules/ai/ai.service.js";
 
 test("stripJsonFences removes markdown code fences", () => {
@@ -234,4 +235,26 @@ test("aiService.askQuestion validates input, bounds history to 6 turns, and vali
   assert.equal(answer.answer, "Gross margin is 61.93%.");
   // 6 sanitized history turns + 1 current user question = 7
   assert.equal(seenContents.length, 7);
+});
+
+test("planning interpretation accepts only verified action keys and falls back from unsafe claims", async () => {
+  const facts = {
+    forecast: { expectedGrossProfit: 12000, expectedGrossMarginPct: 60 },
+    alerts: [{ recommendationKey: "restock-chicken", severity: "critical", message: "Buy 12 kg chicken." }],
+    setupWarnings: [],
+  };
+  const safeService = createAiService({
+    gemini: { isConfigured: true, model: "test", generateJson: async () => ({ summary: "Stock coverage needs attention before the next service.", prioritizedRecommendationKeys: ["restock-chicken"] }) },
+  });
+  const safe = await safeService.interpretPlanning(facts);
+  assert.equal(safe.meta.source, "gemini");
+  assert.deepEqual(safe.interpretation.prioritizedActions, [{ recommendationKey: "restock-chicken", severity: "critical", text: "Buy 12 kg chicken." }]);
+
+  const unsafeService = createAiService({
+    gemini: { isConfigured: true, model: "test", generateJson: async () => ({ summary: "I automatically ordered chicken and forecast net profit of 9000.", prioritizedRecommendationKeys: ["invented"] }) },
+  });
+  const unsafe = await unsafeService.interpretPlanning(facts);
+  assert.equal(unsafe.meta.source, "fallback");
+  assert.equal(unsafe.meta.fallbackReason, "GEMINI_UNSAFE_OR_INVALID_PLANNING_OUTPUT");
+  assert.deepEqual(unsafe.interpretation, buildFallbackPlanningInterpretation(facts));
 });

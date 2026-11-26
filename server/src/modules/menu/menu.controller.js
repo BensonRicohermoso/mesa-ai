@@ -18,6 +18,7 @@ import {
   validateItemStatusToggle,
   validateCategoryStatusToggle,
 } from "./menu.validators.js";
+import { invalidatePlanningCache } from "../ai/planning.service.js";
 
 // ── Categories ───────────────────────────────────────────────────────────────
 
@@ -90,7 +91,7 @@ export async function getMenuItems(req, res, next) {
 export async function postMenuItem(req, res, next) {
   try {
     const validated = validateMenuItem(req.body);
-    const item = await createMenuItem(validated);
+    const item = await createMenuItem(validated); invalidatePlanningCache();
     res.status(201).json(item);
   } catch (error) {
     next(error);
@@ -101,7 +102,7 @@ export async function putMenuItem(req, res, next) {
   try {
     const id = validateUuidParam(req.params.id, "itemId");
     const validated = validateMenuItem(req.body);
-    const item = await updateMenuItem(id, validated);
+    const item = await updateMenuItem(id, validated); invalidatePlanningCache();
     res.json(item);
   } catch (error) {
     next(error);
@@ -112,7 +113,7 @@ export async function patchAvailability(req, res, next) {
   try {
     const id = validateUuidParam(req.params.id, "itemId");
     const { isAvailable } = validateAvailabilityToggle(req.body);
-    const item = await setItemAvailability(id, isAvailable);
+    const item = await setItemAvailability(id, isAvailable); invalidatePlanningCache();
     res.json(item);
   } catch (error) {
     next(error);
@@ -123,7 +124,7 @@ export async function patchStatus(req, res, next) {
   try {
     const id = validateUuidParam(req.params.id, "itemId");
     const { isActive } = validateItemStatusToggle(req.body);
-    const item = await setItemActiveStatus(id, isActive);
+    const item = await setItemActiveStatus(id, isActive); invalidatePlanningCache();
     res.json(item);
   } catch (error) {
     next(error);
