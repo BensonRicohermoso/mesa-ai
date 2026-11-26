@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import PropTypes from 'prop-types'
+import { TwinOrbit } from '../../../shared/components/TwinOrbit.jsx'
 import {
   postAiBriefing,
   postAiForecast,
@@ -136,6 +137,7 @@ export function AiAdvisor({
   if (loading) {
     return (
       <div className="dashboard-skeleton">
+        <div className="loading-orbit-row"><TwinOrbit size="1.15rem" label="Loading AI advisor" /></div>
         <div className="kpi-grid">
           {[1, 2, 3, 4].map((i) => (
             <div key={i} className="kpi-cell">
