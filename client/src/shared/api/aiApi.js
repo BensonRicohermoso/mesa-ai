@@ -33,3 +33,9 @@ export function postAiQna(payload = {}, options = {}) {
 export function postAiPlanning(payload = {}, options = {}) {
   return request('/planning', { ...options, method: 'POST', body: JSON.stringify(payload) })
 }
+
+export function acknowledgePlanningRecommendation(key, note = '') {
+  return request(`/planning/recommendations/${encodeURIComponent(key)}/acknowledgements`, {
+    method: 'POST', body: JSON.stringify({ note }),
+  })
+}
