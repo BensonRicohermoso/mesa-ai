@@ -14,6 +14,8 @@
 | 8 | `20261124100000_staff_pin.sql` | Add `pin_code` column to `staff_profiles` for quick POS shift switching. | Dev 2 | 2026-11-24 | Pending | — |
 | 9 | `20261125100000_fix_drinks_category_and_order_check.sql` | Reactivate Drinks category, backfill/scrub PIN metadata, and check parent category `is_active` in `create_order`. | Dev 2 | 2026-11-25 | Pending | — |
 
+| 10 | `20261126120000_security_and_order_workflow.sql` | Hash staff PINs, add PIN audit/lockout, and enforce expiry, payment, and kitchen lifecycle RPCs. | Codex | 2026-11-26 | Pending | — |
+
 ## Seed Data
 
 | File name | Purpose | Date applied | Environment | Safe to re-run |
@@ -150,6 +152,7 @@ erDiagram
 | `role` | `user_role` | Application role: admin, cashier, or kitchen. |
 | `is_active` | `boolean` | Whether the account is active. |
 | `pin_code` | `text` | Optional 4-to-6 digit numeric PIN for quick POS shift switching (added in `20261124100000_staff_pin.sql`). |
+| `pin_hash` | `text` | Bcrypt hash of the optional 4-digit quick-switch PIN; plaintext values are removed by migration 10. |
 | `created_at` | `timestamptz` | Profile creation time. |
 | `updated_at` | `timestamptz` | Last profile update time. |
 
