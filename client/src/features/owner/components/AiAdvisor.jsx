@@ -192,6 +192,7 @@ export function AiAdvisor({
         </div>
         <span
           className={`ai-badge ${briefing?.meta?.source === 'gemini' ? 'ai-badge--live' : ''}`}
+          title={briefing?.meta?.fallbackReason ? `Fallback reason: ${briefing.meta.fallbackReason}` : undefined}
         >
           {sourceBadge}
         </span>

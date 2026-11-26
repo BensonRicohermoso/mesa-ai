@@ -358,6 +358,7 @@ export function createAiService({
 
         let interpretation;
         let source = "fallback";
+        let fallbackReason = gemini.isConfigured ? null : "GEMINI_NOT_CONFIGURED";
         if (gemini.isConfigured) {
           try {
             const parsed = await gemini.generateJson({
@@ -371,9 +372,13 @@ export function createAiService({
                 watchItems: Array.isArray(parsed.watchItems) ? parsed.watchItems.map(String) : [],
               };
               source = "gemini";
+              fallbackReason = null;
+            } else {
+              fallbackReason = "GEMINI_INVALID_SHAPE";
             }
-          } catch {
-            // Fall through to deterministic fallback
+          } catch (err) {
+            fallbackReason = err?.code || "GEMINI_ERROR";
+            console.warn("[ai] Briefing fallback:", fallbackReason, err?.message);
           }
         }
 
@@ -386,6 +391,7 @@ export function createAiService({
           interpretation,
           meta: {
             source,
+            ...(fallbackReason ? { fallbackReason } : {}),
             model: gemini.model,
             generatedAt: new Date().toISOString(),
             cached: false,
@@ -412,6 +418,7 @@ export function createAiService({
 
         let interpretation;
         let source = "fallback";
+        let fallbackReason = gemini.isConfigured ? null : "GEMINI_NOT_CONFIGURED";
         if (gemini.isConfigured) {
           try {
             const parsed = await gemini.generateJson({
@@ -425,9 +432,13 @@ export function createAiService({
                 recommendations: Array.isArray(parsed.recommendations) ? parsed.recommendations.map(String) : [],
               };
               source = "gemini";
+              fallbackReason = null;
+            } else {
+              fallbackReason = "GEMINI_INVALID_SHAPE";
             }
-          } catch {
-            // Fall through to deterministic fallback
+          } catch (err) {
+            fallbackReason = err?.code || "GEMINI_ERROR";
+            console.warn("[ai] Forecast fallback:", fallbackReason, err?.message);
           }
         }
 
@@ -440,6 +451,7 @@ export function createAiService({
           interpretation,
           meta: {
             source,
+            ...(fallbackReason ? { fallbackReason } : {}),
             model: gemini.model,
             generatedAt: new Date().toISOString(),
             cached: false,
@@ -476,6 +488,7 @@ export function createAiService({
 
       let answer = "";
       let source = "fallback";
+      let fallbackReason = gemini.isConfigured ? null : "GEMINI_NOT_CONFIGURED";
       if (gemini.isConfigured) {
         try {
           answer = await gemini.generateText({
@@ -483,8 +496,10 @@ export function createAiService({
             contents: [...history, { role: "user", content: question }],
           });
           source = "gemini";
-        } catch {
-          // Fall through to deterministic fallback
+          fallbackReason = null;
+        } catch (err) {
+          fallbackReason = err?.code || "GEMINI_ERROR";
+          console.warn("[ai] QnA fallback:", fallbackReason, err?.message);
         }
       }
 
@@ -497,6 +512,7 @@ export function createAiService({
         dataUsed,
         meta: {
           source,
+          ...(fallbackReason ? { fallbackReason } : {}),
           model: gemini.model,
           generatedAt: new Date().toISOString(),
           sourceMode: filter.sourceMode,

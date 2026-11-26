@@ -2,7 +2,7 @@ import { env } from "../../config/server-config.js";
 
 const GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta";
 export const DEFAULT_GEMINI_MODEL = "gemini-2.5-flash";
-const DEFAULT_TIMEOUT_MS = 12000;
+const DEFAULT_TIMEOUT_MS = 25000;
 
 /**
  * Create a structured error for Gemini client failures so callers can
@@ -106,6 +106,9 @@ export function createGeminiClient({
       generationConfig: {
         temperature,
         maxOutputTokens,
+        ...(resolvedModel.startsWith("gemini-2.5")
+          ? { thinkingConfig: { thinkingBudget: 0 } }
+          : {}),
         ...(responseMimeType ? { responseMimeType } : {}),
       },
       ...(systemInstruction
