@@ -27,6 +27,7 @@ export function LoginPage({ onOpenOwner }) {
 
   return (
     <main className="auth-shell">
+      <div className="auth-center-card">
       <section className="auth-story" aria-label="MESA AI station access">
         <div className="story-header">
           <div className="brand">
@@ -134,6 +135,7 @@ export function LoginPage({ onOpenOwner }) {
           </p>
         </div>
       </section>
+      </div>
     </main>
   )
 }

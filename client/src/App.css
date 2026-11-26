@@ -939,6 +939,195 @@ button {
   }
 }
 
+/* ===========================================================================
+   CENTERED LOGIN COMPOSITION
+   =========================================================================== */
+.auth-shell {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  place-items: center;
+  padding: clamp(1rem, 4vw, 4rem);
+  background:
+    radial-gradient(circle at 50% 38%, rgba(212, 168, 95, 0.12), transparent 26rem),
+    #050505;
+}
+
+.auth-center-card {
+  width: min(100%, 66rem);
+  display: grid;
+  grid-template-columns: minmax(0, 1.08fr) minmax(0, 0.92fr);
+  overflow: hidden;
+  color: var(--white);
+  background: linear-gradient(145deg, #151513, #0c0c0b 70%);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 28px 90px rgba(0, 0, 0, 0.52);
+  animation: auth-card-enter 720ms var(--motion-spring) both;
+}
+
+.auth-story,
+.auth-panel {
+  animation: none;
+}
+
+.auth-story {
+  min-height: 0;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(2.25rem, 4.5vw, 4rem) clamp(1.75rem, 4vw, 3.5rem);
+  text-align: center;
+  background: transparent;
+  border: 0;
+}
+
+.auth-story::before {
+  display: none;
+}
+
+.story-header {
+  justify-content: center;
+}
+
+.brand {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.story-copy {
+  max-width: 35rem;
+  margin: 0.35rem auto 2rem;
+}
+
+.story-copy .editorial-quote {
+  color: var(--mesa-brass);
+  line-height: 1.05;
+}
+
+.story-copy h1 {
+  font-size: clamp(2.6rem, 6vw, 4.65rem);
+  margin-bottom: 1.35rem;
+}
+
+.story-copy p {
+  max-width: 32rem;
+  margin: 0 auto;
+  padding: 0;
+  border-left: 0;
+  color: rgba(255, 255, 255, 0.62);
+}
+
+.shift-note {
+  margin: 0 auto;
+  border-color: rgba(212, 168, 95, 0.34);
+  color: rgba(255, 255, 255, 0.76);
+}
+
+.status-dot {
+  background: var(--mesa-brass);
+  box-shadow: 0 0 10px rgba(212, 168, 95, 0.85);
+}
+
+.auth-panel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(2.25rem, 4.5vw, 4rem) clamp(1.75rem, 4vw, 3.5rem);
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.login-card {
+  width: min(100%, 27rem);
+}
+
+.login-card .editorial-eyebrow {
+  color: var(--mesa-brass);
+}
+
+.login-card h2,
+.login-intro,
+.field,
+.checkbox-field {
+  color: var(--white);
+}
+
+.login-intro,
+.login-footer {
+  color: rgba(255, 255, 255, 0.58);
+}
+
+.field input {
+  color: var(--white);
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.16);
+}
+
+.field input:focus {
+  border-color: var(--mesa-brass);
+  box-shadow: 0 0 0 1px var(--mesa-brass);
+}
+
+.login-card .primary-button {
+  width: 100%;
+  color: #18130a;
+  background: var(--mesa-brass);
+  border-color: var(--mesa-brass);
+}
+
+.login-card .primary-button:hover:not(:disabled) {
+  color: var(--white);
+  background: transparent;
+  border-color: var(--mesa-brass);
+}
+
+.login-footer {
+  border-top-color: rgba(255, 255, 255, 0.1);
+}
+
+@keyframes auth-card-enter {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 18px, 0) scale(0.988);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@media (max-width: 860px) {
+  .auth-center-card {
+    width: min(100%, 36rem);
+    grid-template-columns: 1fr;
+  }
+
+  .auth-panel {
+    border-left: 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+  }
+}
+
+@media (max-width: 540px) {
+  .auth-shell {
+    padding: 0.75rem;
+  }
+
+  .auth-story {
+    padding: 2rem 1.25rem 1.75rem;
+  }
+
+  .story-copy {
+    margin: 0.25rem auto 1.5rem;
+  }
+
+  .story-copy h1 {
+    font-size: clamp(2.35rem, 12vw, 3.2rem);
+  }
+
+  .auth-panel {
+    padding: 1.75rem 1.25rem 2.25rem;
+  }
+}
+
 @media (max-width: 600px) {
   .owner-session {
     grid-template-columns: 1fr;
