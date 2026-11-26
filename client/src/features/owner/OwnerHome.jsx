@@ -8,6 +8,7 @@ import { StationSettingsModal } from './components/StationSettingsModal.jsx'
 import { AnalyticsToolbar } from './components/AnalyticsToolbar.jsx'
 import { OwnerDashboard } from './components/OwnerDashboard.jsx'
 import { AnalyticsReports } from './components/AnalyticsReports.jsx'
+import { AiAdvisor } from './components/AiAdvisor.jsx'
 import { getPresetDateRange } from './utils/analyticsFormatters.js'
 import './owner.css'
 
@@ -17,6 +18,7 @@ const TABS = [
   { key: 'tables', label: '03 · Table Suite' },
   { key: 'staff', label: '04 · Staff Roster' },
   { key: 'reports', label: '05 · Analytics & Reports' },
+  { key: 'ai', label: '06 · AI Advisor', adminOnly: true },
 ]
 
 function buildDefaultFilter(sourceMode = 'live') {
@@ -60,7 +62,9 @@ export function OwnerHome() {
     setAnalyticsFilter((prev) => buildDefaultFilter(prev.sourceMode))
   }, [])
 
-  const showToolbar = activeTab === 'overview' || activeTab === 'reports'
+  const isAdmin = (session?.staff?.role || 'admin') === 'admin'
+  const visibleTabs = TABS.filter((tab) => !tab.adminOnly || isAdmin)
+  const showToolbar = activeTab === 'overview' || activeTab === 'reports' || activeTab === 'ai'
 
   return (
     <main className="owner-shell">
@@ -105,7 +109,7 @@ export function OwnerHome() {
 
           {/* ── Tab Navigation ──────────────────────────────────── */}
           <nav className="owner-tabs">
-            {TABS.map((tab) => (
+            {visibleTabs.map((tab) => (
               <button
                 key={tab.key}
                 className={`owner-tab ${activeTab === tab.key ? 'owner-tab--active' : ''}`}
@@ -147,6 +151,15 @@ export function OwnerHome() {
               filter={analyticsFilter}
               subView={reportsSubView}
               onSubViewChange={setReportsSubView}
+              refreshNonce={refreshNonce}
+              onSwitchToPreview={handleSwitchToPreview}
+              onLoadingChange={setIsAnalyticsLoading}
+            />
+          )}
+
+          {activeTab === 'ai' && isAdmin && (
+            <AiAdvisor
+              filter={analyticsFilter}
               refreshNonce={refreshNonce}
               onSwitchToPreview={handleSwitchToPreview}
               onLoadingChange={setIsAnalyticsLoading}
