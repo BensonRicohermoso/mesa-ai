@@ -125,6 +125,7 @@ export function OwnerHome() {
 
           {/* ── Tab Navigation ──────────────────────────────────── */}
           {/* ── Analytics Toolbar (shared by Overview & Reports) ── */}
+          <div className="owner-content-transition" key={activeTab}>
           {showToolbar && (
             <AnalyticsToolbar
               filter={analyticsFilter}
@@ -171,6 +172,8 @@ export function OwnerHome() {
           )}
 
           {/* ── Compact Station Footer Strip ──────────────────── */}
+          </div>
+
           <footer className="owner-station-strip no-print">
             <span className="owner-station-meta">
               {session?.staff?.fullName || 'Operator'} &bull;{' '}

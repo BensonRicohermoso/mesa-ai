@@ -110,6 +110,21 @@
   background: var(--mesa-brass);
 }
 
+.owner-content-transition {
+  animation: owner-content-enter 420ms var(--motion-spring) both;
+}
+
+@keyframes owner-content-enter {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 10px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
 .owner-header-bar {
   padding-bottom: clamp(1.5rem, 3vw, 2.75rem);
   margin-bottom: clamp(2rem, 4vw, 3.5rem);
