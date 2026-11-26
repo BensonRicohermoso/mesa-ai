@@ -7,7 +7,6 @@ import {
   postAiQna,
 } from '../../../shared/api/aiApi.js'
 import { formatPhp, formatPct } from '../utils/analyticsFormatters.js'
-import { PlanningWorkspace } from './PlanningWorkspace.jsx'
 
 const STARTER_PROMPTS = [
   'Why did gross margin change in this period?',
@@ -33,7 +32,6 @@ export function AiAdvisor({
   const [messages, setMessages] = useState([])
   const [qnaLoading, setQnaLoading] = useState(false)
   const [qnaError, setQnaError] = useState(null)
-  const [advisorView, setAdvisorView] = useState('advisor')
 
   const buildPayload = useCallback(
     (extra = {}) => ({
@@ -186,18 +184,8 @@ export function AiAdvisor({
   const sourceBadge =
     briefing?.meta?.source === 'gemini' ? 'Gemini Live' : 'Fallback Mode'
 
-  if (advisorView === 'planning') {
-    return (
-      <div className="ai-advisor">
-        <div className="planning-nav no-print"><button onClick={() => setAdvisorView('advisor')}>Advisor</button><button className="planning-nav__active" onClick={() => setAdvisorView('planning')}>Planning</button></div>
-        <PlanningWorkspace />
-      </div>
-    )
-  }
-
   return (
     <div className="ai-advisor">
-      <div className="planning-nav no-print"><button className="planning-nav__active" onClick={() => setAdvisorView('advisor')}>Advisor</button><button onClick={() => setAdvisorView('planning')}>Planning</button></div>
       {/* ── Verified Metrics Strip ── */}
       <div className="ai-section-head">
         <div>

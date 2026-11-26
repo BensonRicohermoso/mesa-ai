@@ -12,6 +12,7 @@ const StaffManagement = lazy(() => import('./components/StaffManagement.jsx').th
 const OwnerDashboard = lazy(() => import('./components/OwnerDashboard.jsx').then((m) => ({ default: m.OwnerDashboard })))
 const AnalyticsReports = lazy(() => import('./components/AnalyticsReports.jsx').then((m) => ({ default: m.AnalyticsReports })))
 const AiAdvisor = lazy(() => import('./components/AiAdvisor.jsx').then((m) => ({ default: m.AiAdvisor })))
+const PlanningWorkspace = lazy(() => import('./components/PlanningWorkspace.jsx').then((m) => ({ default: m.PlanningWorkspace })))
 
 const TABS = [
   { key: 'overview', label: '01 · Overview' },
@@ -20,6 +21,7 @@ const TABS = [
   { key: 'staff', label: '04 · Staff Roster' },
   { key: 'reports', label: '05 · Analytics & Reports' },
   { key: 'ai', label: '06 · AI Advisor', adminOnly: true },
+  { key: 'planning', label: '07 · Planning', adminOnly: true },
 ]
 
 function buildDefaultFilter(sourceMode = 'live') {
@@ -143,6 +145,7 @@ export function OwnerHome() {
               filter={analyticsFilter}
               refreshNonce={refreshNonce}
               onNavigateReports={() => setActiveTab('reports')}
+              onNavigatePlanning={() => setActiveTab('planning')}
               onSwitchToPreview={handleSwitchToPreview}
               onResetRange={handleResetRange}
               onLoadingChange={setIsAnalyticsLoading}
@@ -172,6 +175,7 @@ export function OwnerHome() {
               onLoadingChange={setIsAnalyticsLoading}
             />
           )}
+          {activeTab === 'planning' && isAdmin && <PlanningWorkspace />}
           </Suspense>
 
           {/* ── Compact Station Footer Strip ──────────────────── */}
