@@ -4,6 +4,7 @@ import { createAuthError } from "../../lib/errors.js";
 import { getPaidMenuItemSales } from "../inventory/paid-sales.service.js";
 import { getIngredientStock } from "../inventory/inventory.service.js";
 import { listPlanningEvents } from "../advisor/planning-events.service.js";
+import { aiService } from "./ai.service.js";
 
 const TTL_MS = 5 * 60 * 1000;
 const cache = new Map();
@@ -109,6 +110,7 @@ export async function getPlanning(input) {
   const request = validatePlanningInput(input); const cacheKey = `${request.horizonDays}:${request.tz}:${request.sourceMode}`; const cached = cache.get(cacheKey);
   if (!request.forceRefresh && cached && cached.expiresAt > Date.now()) return { ...cached.value, meta: { ...cached.value.meta, cached: true } };
   const facts = await computePlanningFacts(request);
-  const value = { facts, interpretation: { summary: facts.alerts[0]?.message || "Verified planning calculation is ready. Complete inventory setup to improve recommendations.", prioritizedActions: facts.alerts.slice(0, 5).map((alert) => alert.message) }, meta: { source: "deterministic", generatedAt: new Date().toISOString(), cached: false, sourceMode: request.sourceMode } };
+  const ai = await aiService.interpretPlanning(facts);
+  const value = { facts, interpretation: ai.interpretation, meta: { ...ai.meta, generatedAt: new Date().toISOString(), cached: false, sourceMode: request.sourceMode } };
   cache.set(cacheKey, { expiresAt: Date.now() + TTL_MS, value }); return value;
 }
