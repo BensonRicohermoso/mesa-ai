@@ -16,6 +16,7 @@ import {
 } from '../utils/analyticsFormatters.js'
 import { SalesTrendChart } from './charts/SalesTrendChart.jsx'
 import { PeakHoursChart } from './charts/PeakHoursChart.jsx'
+import { postAiPlanning } from '../../../shared/api/aiApi.js'
 
 const STATUS_LABELS = {
   completed: 'Completed',
@@ -31,6 +32,7 @@ export function OwnerDashboard({
   filter,
   refreshNonce = 0,
   onNavigateReports,
+  onNavigatePlanning,
   onSwitchToPreview,
   onResetRange,
   onLoadingChange,
@@ -44,6 +46,7 @@ export function OwnerDashboard({
   const [granularityOverride, setGranularityOverride] = useState(null)
   const [prevRangeKey, setPrevRangeKey] = useState(`${filter.from}|${filter.to}`)
   const [localRetryCount, setLocalRetryCount] = useState(0)
+  const [planningAlert, setPlanningAlert] = useState(null)
 
   const rangeKey = `${filter.from}|${filter.to}`
   if (rangeKey !== prevRangeKey) {
@@ -121,6 +124,18 @@ export function OwnerDashboard({
     fetchData(ac.signal)
     return () => ac.abort()
   }, [fetchData, refreshNonce, localRetryCount])
+
+  useEffect(() => {
+    let active = true
+    postAiPlanning({ horizonDays: 30, tz: 'Asia/Manila', sourceMode: 'live' })
+      .then((plan) => {
+        if (!active) return
+        const urgent = (plan.facts?.alerts || []).filter((alert) => ['critical', 'high'].includes(alert.severity))
+        setPlanningAlert(urgent.length ? urgent : null)
+      })
+      .catch(() => { if (active) setPlanningAlert(null) })
+    return () => { active = false }
+  }, [refreshNonce])
 
   const kpis = summary?.kpis
   const deltas = summary?.deltasPct
@@ -203,6 +218,11 @@ export function OwnerDashboard({
 
   return (
     <div className="owner-dashboard">
+      {planningAlert && onNavigatePlanning && (
+        <button type="button" className="dashboard-planning-alert" onClick={onNavigatePlanning}>
+          <span aria-hidden="true">!</span><strong>{planningAlert.length} stock action{planningAlert.length === 1 ? '' : 's'} need attention</strong><em>Open Planning</em>
+        </button>
+      )}
       {/* ── KPI Strip ── */}
       <div className="kpi-grid">
         <div className="kpi-cell">
