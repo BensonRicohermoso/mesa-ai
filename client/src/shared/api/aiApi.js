@@ -29,3 +29,7 @@ export function postAiQna(payload = {}, options = {}) {
     body: JSON.stringify(payload),
   })
 }
+
+export function postAiPlanning(payload = {}, options = {}) {
+  return request('/planning', { ...options, method: 'POST', body: JSON.stringify(payload) })
+}
