@@ -50,7 +50,7 @@
   margin: 0 0 1.25rem 0.75rem;
   color: rgba(255, 255, 255, 0.38);
   font-family: var(--font-sans);
-  font-size: 0.58rem;
+  font-size: 0.68rem;
   font-weight: 600;
   letter-spacing: 0.18em;
 }
@@ -80,7 +80,7 @@
 
 .owner-rail-index {
   font-family: var(--font-sans);
-  font-size: 0.68rem;
+  font-size: 0.84rem;
   font-weight: 600;
   letter-spacing: 0.08em;
   font-variant-numeric: tabular-nums;
