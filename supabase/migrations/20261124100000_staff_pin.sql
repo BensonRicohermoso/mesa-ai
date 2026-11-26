@@ -9,4 +9,7 @@ affected tables: staff_profiles
 ALTER TABLE public.staff_profiles
 ADD COLUMN IF NOT EXISTS pin_code text;
 
+ALTER TABLE public.orders
+ADD COLUMN IF NOT EXISTS tracking_token uuid NOT NULL DEFAULT gen_random_uuid() UNIQUE;
+
 COMMENT ON COLUMN public.staff_profiles.pin_code IS 'Optional 4-to-6 digit numeric PIN for quick floor shift switching on shared POS terminals.';

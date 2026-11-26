@@ -8,7 +8,7 @@ function toNumber(value) {
 }
 
 // Format a database order without exposing cost or staff data.
-function formatOrder(order, includeStatusTimestamps = false) {
+function formatOrder(order, includeStatusTimestamps = false, includeTrackingToken = false) {
   const table = order.table || order.dining_tables || {};
   const formatted = {
     orderRef: order.orderRef || order.order_ref,
@@ -37,6 +37,7 @@ function formatOrder(order, includeStatusTimestamps = false) {
     formatted.readyAt = order.readyAt || order.ready_at;
     formatted.completedAt = order.completedAt || order.completed_at;
   }
+  if (includeTrackingToken) formatted.trackingToken = order.trackingToken || order.tracking_token;
 
   return formatted;
 }
@@ -117,18 +118,19 @@ export async function createOrder(validated) {
 
   return {
     isNew: data.isNew,
-    order: formatOrder(data),
+    order: formatOrder(data, false, true),
   };
 }
 
 // Fetch an order by reference and return only customer-safe fields.
-export async function getOrderByReference(orderRef) {
+export async function getOrderByReference(orderRef, trackingToken) {
   const { data, error } = await supabase
     .from("orders")
     .select(
       "order_ref,order_status,payment_status,subtotal,total,expires_at,created_at,confirmed_at,preparing_at,ready_at,completed_at,dining_tables(table_code,label),order_items(item_name,quantity,unit_price,line_total,notes)"
     )
     .eq("order_ref", orderRef)
+    .eq("tracking_token", trackingToken)
     .maybeSingle();
 
   if (error) throw error;
