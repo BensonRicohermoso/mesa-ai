@@ -22,6 +22,10 @@ if (missingVariables.length > 0) {
   );
 }
 
+if (process.env.NODE_ENV === "production" && (!process.env.CLIENT_URL || !/^https:\/\//i.test(process.env.CLIENT_URL.trim()))) {
+  throw new Error("CLIENT_URL must be an HTTPS origin in production.");
+}
+
 export const env = {
   PORT: process.env.PORT || "5000",
   CLIENT_URL:

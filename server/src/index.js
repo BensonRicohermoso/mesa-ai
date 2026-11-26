@@ -11,12 +11,18 @@ import tablesRoutes from "./modules/tables/tables.routes.js";
 import staffRoutes from "./modules/staff/staff.routes.js";
 import ordersRoutes from "./modules/orders/orders.routes.js";
 import aiRoutes from "./modules/ai/ai.routes.js";
+import paymentsRoutes from "./modules/payments/payments.routes.js";
+import kitchenRoutes from "./modules/kitchen/kitchen.routes.js";
+import { requestLogger } from "./middleware/observability.js";
 import {
   errorHandler,
   notFoundHandler,
 } from "./middleware/errorHandler.js";
 
 const app = express();
+
+app.set("trust proxy", 1);
+app.use(requestLogger);
 
 app.use(cors({
   origin: (origin, callback) => {
@@ -42,6 +48,8 @@ app.use("/api/tables", tablesRoutes);
 app.use("/api/staff", staffRoutes);
 app.use("/api", ordersRoutes);
 app.use("/api/ai", aiRoutes);
+app.use("/api/payments", paymentsRoutes);
+app.use("/api/kitchen", kitchenRoutes);
 app.use(notFoundHandler);
 app.use(errorHandler);
 
