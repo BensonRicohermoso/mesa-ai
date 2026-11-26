@@ -16,6 +16,8 @@
 
 | 10 | `20261126120000_security_and_order_workflow.sql` | Hash staff PINs, add PIN audit/lockout, and enforce expiry, payment, and kitchen lifecycle RPCs. | Codex | 2026-11-26 | Pending | — |
 
+| 11 | `20261127100000_inventory_advisor_foundation.sql` | Create suppliers, ingredients, recipes, inventory adjustments, planning events, Advisor acknowledgements, indexes, triggers, and admin RLS. | Codex | 2026-11-27 | Pending | — |
+
 ## Seed Data
 
 | File name | Purpose | Date applied | Environment | Safe to re-run |
@@ -34,9 +36,16 @@ erDiagram
   dining_tables ||--o{ orders : "contains"
   menu_categories ||--o{ menu_items : "categorizes"
   menu_items ||--o{ order_items : "referenced by"
+  menu_items ||--o{ menu_item_recipes : "uses"
+  suppliers ||--o{ ingredients : "provides"
+  ingredients ||--o{ menu_item_recipes : "used by"
+  ingredients ||--o{ inventory_adjustments : "adjusted by"
   orders ||--o{ order_items : "has"
   orders ||--o{ order_status_history : "tracks"
   orders ||--o| payments : "paid by"
+  staff_profiles ||--o{ inventory_adjustments : "records"
+  staff_profiles ||--o{ planning_events : "creates"
+  staff_profiles ||--o{ advisor_recommendation_acknowledgements : "acknowledges"
 
   auth_users {
     uuid id PK
@@ -78,6 +87,61 @@ erDiagram
     boolean is_active
     timestamptz created_at
     timestamptz updated_at
+  }
+  suppliers {
+    uuid id PK
+    text name UK
+    boolean is_active
+    timestamptz created_at
+    timestamptz updated_at
+  }
+  ingredients {
+    uuid id PK
+    text name UK
+    text base_unit
+    numeric on_hand_quantity
+    numeric par_level_quantity
+    numeric unit_cost
+    uuid supplier_id FK
+    integer lead_time_days
+    boolean is_active
+    timestamptz created_at
+    timestamptz updated_at
+  }
+  menu_item_recipes {
+    uuid id PK
+    uuid menu_item_id FK
+    uuid ingredient_id FK
+    numeric quantity_per_serving
+    timestamptz created_at
+    timestamptz updated_at
+  }
+  inventory_adjustments {
+    uuid id PK
+    uuid ingredient_id FK
+    numeric quantity_delta
+    inventory_adjustment_reason reason
+    uuid recorded_by FK
+    timestamptz recorded_at
+    timestamptz created_at
+  }
+  planning_events {
+    uuid id PK
+    text title
+    planning_event_type event_type
+    date starts_on
+    date ends_on
+    numeric demand_adjustment_pct
+    uuid created_by FK
+    timestamptz created_at
+    timestamptz updated_at
+  }
+  advisor_recommendation_acknowledgements {
+    uuid id PK
+    text recommendation_key
+    uuid acknowledged_by FK
+    timestamptz acknowledged_at
+    timestamptz created_at
   }
   order_counters {
     date counter_date PK
@@ -193,6 +257,81 @@ erDiagram
 | `is_active` | `boolean` | Soft-delete flag. |
 | `created_at` | `timestamptz` | Item creation time. |
 | `updated_at` | `timestamptz` | Last item update time. |
+
+### `suppliers`
+
+| Column | Type | Purpose |
+| --- | --- | --- |
+| `id` | `uuid` | Primary key. |
+| `name` | `text` | Unique supplier name used to group purchase recommendations. |
+| `contact_name`, `phone`, `email` | `text` | Optional purchasing contact information. |
+| `is_active` | `boolean` | Whether this supplier can be selected for active ingredients. |
+| `created_at`, `updated_at` | `timestamptz` | Audit timestamps. |
+
+### `ingredients`
+
+| Column | Type | Purpose |
+| --- | --- | --- |
+| `id` | `uuid` | Primary key. |
+| `name` | `text` | Unique ingredient name. |
+| `base_unit` | `text` | Normalized unit: `g`, `ml`, `piece`, `pack`, or `portion`. |
+| `on_hand_quantity` | `numeric(12,3)` | Initial/current counted stock in the base unit. |
+| `par_level_quantity` | `numeric(12,3)` | Buffer to retain after projected lead-time consumption. |
+| `unit_cost` | `numeric(12,2)` | Estimated PHP cost of one base unit. |
+| `supplier_id` | `uuid` | Optional supplying vendor. |
+| `lead_time_days` | `integer` | Supplier lead time used by restock calculations. |
+| `is_active` | `boolean` | Soft-delete/availability flag for planning. |
+| `created_at`, `updated_at` | `timestamptz` | Audit timestamps. |
+
+### `menu_item_recipes`
+
+| Column | Type | Purpose |
+| --- | --- | --- |
+| `id` | `uuid` | Primary key. |
+| `menu_item_id` | `uuid` | Menu item prepared with this ingredient. |
+| `ingredient_id` | `uuid` | Ingredient consumed per serving. |
+| `quantity_per_serving` | `numeric(12,3)` | Positive quantity in the ingredient's base unit. |
+| `created_at`, `updated_at` | `timestamptz` | Audit timestamps. |
+
+Each menu-item/ingredient pair is unique.
+
+### `inventory_adjustments`
+
+| Column | Type | Purpose |
+| --- | --- | --- |
+| `id` | `uuid` | Primary key. |
+| `ingredient_id` | `uuid` | Ingredient affected by the immutable ledger entry. |
+| `quantity_delta` | `numeric(12,3)` | Signed base-unit adjustment; zero is allowed for a confirmed physical count. |
+| `reason` | `inventory_adjustment_reason` | `physical_count`, `wastage`, `delivery_correction`, or `manual_correction`. |
+| `note` | `text` | Optional explanation or reference. |
+| `recorded_by` | `uuid` | Staff member who recorded the adjustment, if retained. |
+| `recorded_at`, `created_at` | `timestamptz` | Operational and audit timestamps. |
+
+### `planning_events`
+
+| Column | Type | Purpose |
+| --- | --- | --- |
+| `id` | `uuid` | Primary key. |
+| `title` | `text` | Owner-facing description of the event. |
+| `event_type` | `planning_event_type` | `promotion`, `holiday`, `closure`, or `large_order`. |
+| `starts_on`, `ends_on` | `date` | Inclusive event date range. |
+| `demand_adjustment_pct` | `numeric(7,2)` | Demand change from -100% through +500%; closures must be -100%. |
+| `note` | `text` | Optional planning context. |
+| `created_by` | `uuid` | Admin who entered the event, if retained. |
+| `created_at`, `updated_at` | `timestamptz` | Audit timestamps. |
+
+### `advisor_recommendation_acknowledgements`
+
+| Column | Type | Purpose |
+| --- | --- | --- |
+| `id` | `uuid` | Primary key. |
+| `recommendation_key` | `text` | Stable key for a calculated, read-only Advisor recommendation. |
+| `acknowledged_by` | `uuid` | Admin who reviewed the recommendation. |
+| `acknowledged_at` | `timestamptz` | Review timestamp. |
+| `note` | `text` | Optional review note. |
+| `created_at` | `timestamptz` | Audit timestamp. |
+
+Each admin can acknowledge a recommendation key once.
 
 ### `order_counters`
 
@@ -329,6 +468,20 @@ Error codes:
 - `gcash`
 - `online`
 
+### `inventory_adjustment_reason`
+
+- `physical_count`
+- `wastage`
+- `delivery_correction`
+- `manual_correction`
+
+### `planning_event_type`
+
+- `promotion`
+- `holiday`
+- `closure`
+- `large_order`
+
 ## Design Decisions
 
 - Order item records store `item_name`, `unit_price`, and `unit_cost` snapshots so menu changes do not alter historical order or profit calculations.
@@ -338,6 +491,10 @@ Error codes:
 - Row Level Security is enabled on every table. The Express backend uses the Supabase service role and enforces application roles itself, while no anon policies are created. Never expose or use the service role key in client code.
 - Gross profit is sales revenue minus the cost snapshots on sold order items. It does not represent net profit.
 - Online payments are represented by `payment_method.online` plus nullable provider fields, allowing future providers without redesigning the core payment schema.
+- Inventory stock is normalized to one base unit per ingredient. Recipes consume that same unit; cross-unit conversion and inventory lots are deliberately deferred.
+- Inventory adjustments are immutable audit records. The Owner Advisor will calculate stock from a count baseline, later adjustments, and paid-order recipe consumption rather than silently overwriting adjustment history.
+- Supplier lead time plus ingredient par level defines the restock safety buffer. Missing recipes, supplier details, or recent counts must result in Advisor setup warnings rather than invented purchase quantities.
+- The new inventory and Advisor tables use active-admin RLS policies for direct Supabase access. The Express backend remains the primary service-role access boundary and must enforce admin authorization on every corresponding route.
 
 ## How to Add a Migration
 
