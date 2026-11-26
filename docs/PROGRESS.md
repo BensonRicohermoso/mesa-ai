@@ -78,10 +78,7 @@ MESA-AI currently has the repository structure, Supabase setup, seven applied da
 - [x] `feature/dev2-table-management`
 - [x] `feature/dev2-staff-management`
 - [x] `feature/dev2-owner-dashboard` (includes analytics & reports UI)
-- [ ] `feature/dev2-gemini-integration`
-- [ ] `feature/dev2-ai-daily-insights`
-- [ ] `feature/dev2-ai-forecast-recommendations`
-- [ ] `feature/dev2-ai-qna`
+- [ ] `feature/dev2-ai` (combines Gemini integration, daily insights, forecast & recommendations, and AI Q&A)
 
 ## Next Up
 
