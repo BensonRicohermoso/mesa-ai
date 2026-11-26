@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import PropTypes from 'prop-types'
+import { TwinOrbit } from '../../../shared/components/TwinOrbit.jsx'
 import {
   getAnalyticsSummary,
   getAnalyticsTrends,
@@ -226,6 +227,7 @@ export function AnalyticsReports({
   if (loading) {
     return (
       <div className="analytics-reports">
+        <div className="loading-orbit-row"><TwinOrbit size="1.15rem" label="Loading analytics reports" /></div>
         <nav className="analytics-sub-tabs">
           {SUB_VIEWS.map((v) => (
             <button key={v.key} type="button" className="segment-btn" disabled>{v.label}</button>

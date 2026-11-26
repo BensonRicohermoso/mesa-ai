@@ -1,12 +1,12 @@
 import { supabase } from "../../config/supabase.js";
 import { createAuthError } from "../../lib/errors.js";
-import { assertPinAvailable } from "../auth/auth.service.js";
+import { setStaffPin } from "../auth/auth.service.js";
 
 const STAFF_SELECT =
-  "id,full_name,role,is_active,pin_code,created_at,updated_at";
+  "id,full_name,role,is_active,pin_hash,created_at,updated_at";
 
 function formatStaffRecord(profile, authUser, activeAdminCount) {
-  const hasPin = Boolean(profile.pin_code || authUser?.user_metadata?.pin_code);
+  const hasPin = Boolean(profile.pin_hash);
   const isLastActiveAdmin =
     profile.role === "admin" && profile.is_active && activeAdminCount <= 1;
 
@@ -182,10 +182,6 @@ export async function provisionStaff({
   pinCode,
   isActive = true,
 }) {
-  if (pinCode && isActive) {
-    await assertPinAvailable(pinCode);
-  }
-
   // Never store plaintext PIN in auth user_metadata (which is embedded in JWTs).
   const userMetadata = { full_name: fullName };
 
@@ -221,7 +217,6 @@ export async function provisionStaff({
       full_name: fullName,
       role,
       is_active: isActive,
-      pin_code: pinCode || null,
     })
     .select(STAFF_SELECT)
     .single();
@@ -231,6 +226,7 @@ export async function provisionStaff({
     throw profileError;
   }
 
+  if (pinCode) await setStaffPin(createdUser.id, pinCode);
   const activeAdminCount = await countActiveAdmins();
   return formatStaffRecord(profile, createdUser, activeAdminCount);
 }
@@ -250,11 +246,6 @@ export async function updateStaff(id, updates) {
     updates.isActive !== undefined ? updates.isActive : current.is_active;
 
   await assertNotLastActiveAdmin(current, nextRole, nextActive);
-
-  // Enforce PIN uniqueness if assigning a PIN on an account that will be active
-  if (updates.pinCode && nextActive) {
-    await assertPinAvailable(updates.pinCode, id);
-  }
 
   // ── Step 1: Auth update FIRST (may reject weak password, etc.) ────────────
   const { data: existingAuth, error: fetchAuthError } =
@@ -309,11 +300,6 @@ export async function updateStaff(id, updates) {
   if (updates.role !== undefined) profileUpdates.role = updates.role;
   if (updates.isActive !== undefined) profileUpdates.is_active = updates.isActive;
 
-  // Sync pin_code to staff_profiles when updating
-  if (updates.pinCode !== undefined) {
-    profileUpdates.pin_code = updates.pinCode;
-  }
-
   let updatedProfile = current;
   if (Object.keys(profileUpdates).length > 0) {
     const { data, error } = await supabase
@@ -329,6 +315,14 @@ export async function updateStaff(id, updates) {
     await verifyActiveAdminInvariant(current, nextRole, nextActive);
   }
 
+  if (updates.pinCode !== undefined) {
+    if (updates.pinCode === null) {
+      const { error } = await supabase.from("staff_profiles").update({ pin_hash: null, pin_failed_attempts: 0, pin_locked_until: null }).eq("id", id);
+      if (error) throw error;
+    } else {
+      await setStaffPin(id, updates.pinCode);
+    }
+  }
   const activeAdminCount = await countActiveAdmins();
   return formatStaffRecord(updatedProfile, authUser, activeAdminCount);
 }
