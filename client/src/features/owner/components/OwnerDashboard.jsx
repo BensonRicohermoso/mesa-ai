@@ -395,6 +395,7 @@ OwnerDashboard.propTypes = {
   }).isRequired,
   refreshNonce: PropTypes.number,
   onNavigateReports: PropTypes.func,
+  onNavigatePlanning: PropTypes.func,
   onSwitchToPreview: PropTypes.func,
   onResetRange: PropTypes.func,
   onLoadingChange: PropTypes.func,
