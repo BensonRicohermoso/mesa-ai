@@ -19,6 +19,15 @@ function salesDate(isoTimestamp, timeZone) {
   return `${get("year")}-${get("month")}-${get("day")}`;
 }
 
+function isPaidConfirmedOrder(order) {
+  return Boolean(
+    order &&
+    order.payment_status === "paid" &&
+    order.confirmed_at &&
+    !EXCLUDED_ORDER_STATUSES.has(order.order_status)
+  );
+}
+
 /**
  * Reduce paid order-item snapshots to daily menu-item quantities. This is the
  * one source of truth for inventory consumption and later demand forecasting.
@@ -27,12 +36,7 @@ export function aggregatePaidMenuItemSales(rows, { timeZone = "Asia/Manila" } = 
   const grouped = new Map();
   for (const row of rows || []) {
     const order = row.orders;
-    if (
-      !order ||
-      order.payment_status !== "paid" ||
-      !order.confirmed_at ||
-      EXCLUDED_ORDER_STATUSES.has(order.order_status)
-    ) continue;
+    if (!isPaidConfirmedOrder(order)) continue;
 
     const date = salesDate(order.confirmed_at, timeZone);
     const key = `${date}:${row.menu_item_id}`;
@@ -91,6 +95,50 @@ export async function getPaidMenuItemSales({ from, to, timeZone = "Asia/Manila" 
   return aggregatePaidMenuItemSales(await getPaidOrderItemSnapshots({ from, to }), { timeZone });
 }
 
+export function mapPaidSalesToRecipeConsumption(orderItemSnapshots, recipes, { timeZone = "Asia/Manila" } = {}) {
+  const menuItemSales = aggregatePaidMenuItemSales(orderItemSnapshots, { timeZone });
+  const recipesByMenuItem = new Map();
+  for (const recipe of recipes || []) {
+    const entries = recipesByMenuItem.get(recipe.menu_item_id) || [];
+    entries.push(recipe);
+    recipesByMenuItem.set(recipe.menu_item_id, entries);
+  }
+
+  const consumption = new Map();
+  const missing = new Map();
+  for (const snapshot of orderItemSnapshots || []) {
+    if (!isPaidConfirmedOrder(snapshot.orders)) continue;
+    const recipe = recipesByMenuItem.get(snapshot.menu_item_id);
+    if (!recipe?.length) continue;
+    for (const line of recipe) {
+      const id = `${snapshot.id}:${line.ingredient_id}`;
+      consumption.set(id, {
+        id,
+        ingredientId: line.ingredient_id,
+        menuItemId: snapshot.menu_item_id,
+        orderItemId: snapshot.id,
+        confirmedAt: snapshot.orders.confirmed_at,
+        quantity: number(snapshot.quantity) * number(line.quantity_per_serving),
+      });
+    }
+  }
+
+  for (const sale of menuItemSales) {
+    if (recipesByMenuItem.has(sale.menuItemId)) continue;
+    const current = missing.get(sale.menuItemId) || { menuItemId: sale.menuItemId, itemName: sale.itemName, quantity: 0, grossSales: 0, dates: [] };
+    current.quantity += sale.quantity;
+    current.grossSales += sale.grossSales;
+    current.dates.push(sale.date);
+    missing.set(sale.menuItemId, current);
+  }
+
+  return {
+    menuItemSales,
+    ingredientConsumption: [...consumption.values()],
+    missingRecipeMenuItems: [...missing.values()].map((entry) => ({ ...entry, dates: [...new Set(entry.dates)].sort() })),
+  };
+}
+
 /**
  * Apply current recipes to the reusable paid-sales data. Sales for a menu item
  * without a recipe are deliberately retained in missingRecipeMenuItems rather
@@ -108,46 +156,5 @@ export async function getPaidIngredientConsumption({ from, to, timeZone = "Asia/
     .in("menu_item_id", menuItemIds);
   if (error) throw error;
 
-  const recipesByMenuItem = new Map();
-  for (const recipe of recipes || []) {
-    const entries = recipesByMenuItem.get(recipe.menu_item_id) || [];
-    entries.push(recipe);
-    recipesByMenuItem.set(recipe.menu_item_id, entries);
-  }
-
-  const consumption = new Map();
-  const missing = new Map();
-  for (const snapshot of orderItemSnapshots) {
-    const recipe = recipesByMenuItem.get(snapshot.menu_item_id);
-    if (!recipe?.length) {
-      continue;
-    }
-    for (const line of recipe) {
-      const id = `${snapshot.id}:${line.ingredient_id}`;
-      consumption.set(id, {
-        id,
-        ingredientId: line.ingredient_id,
-        menuItemId: snapshot.menu_item_id,
-        orderItemId: snapshot.id,
-        confirmedAt: snapshot.orders.confirmed_at,
-        quantity: number(snapshot.quantity) * number(line.quantity_per_serving),
-      });
-    }
-  }
-
-  // Use daily aggregates for a concise, deduplicated missing-recipe warning.
-  for (const sale of menuItemSales) {
-    if (recipesByMenuItem.has(sale.menuItemId)) continue;
-    const current = missing.get(sale.menuItemId) || { menuItemId: sale.menuItemId, itemName: sale.itemName, quantity: 0, grossSales: 0, dates: [] };
-    current.quantity += sale.quantity;
-    current.grossSales += sale.grossSales;
-    current.dates.push(sale.date);
-    missing.set(sale.menuItemId, current);
-  }
-
-  return {
-    menuItemSales,
-    ingredientConsumption: [...consumption.values()],
-    missingRecipeMenuItems: [...missing.values()].map((entry) => ({ ...entry, dates: [...new Set(entry.dates)].sort() })),
-  };
+  return mapPaidSalesToRecipeConsumption(orderItemSnapshots, recipes, { timeZone });
 }
