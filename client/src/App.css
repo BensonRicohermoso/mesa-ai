@@ -124,6 +124,36 @@ button {
 }
 
 .auth-story {
+  animation: auth-story-enter 720ms var(--motion-spring) both;
+}
+
+.auth-panel {
+  animation: auth-panel-enter 680ms var(--motion-spring) 120ms both;
+}
+
+@keyframes auth-story-enter {
+  from {
+    opacity: 0;
+    transform: translate3d(-22px, 0, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes auth-panel-enter {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 20px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.auth-story {
   position: relative;
   display: flex;
   flex-direction: column;

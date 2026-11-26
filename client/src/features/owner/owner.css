@@ -22,6 +22,36 @@
   align-items: start;
 }
 
+.owner-rail {
+  animation: owner-rail-enter 560ms var(--motion-spring) 80ms both;
+}
+
+.owner-card {
+  animation: owner-surface-enter 680ms var(--motion-spring) 130ms both;
+}
+
+@keyframes owner-rail-enter {
+  from {
+    opacity: 0;
+    transform: translate3d(-12px, 0, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes owner-surface-enter {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 18px, 0) scale(0.992);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
 .owner-container {
   width: 100%;
   margin: 0;
