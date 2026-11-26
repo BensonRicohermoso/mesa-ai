@@ -123,7 +123,7 @@
 }
 
 .owner-header-bar .brand {
-  font-size: clamp(0.92rem, 1.1vw, 1.12rem) !important;
+  font-size: clamp(1.2rem, 1.5vw, 1.5rem) !important;
   letter-spacing: 0.3em;
 }
 
@@ -626,7 +626,11 @@
 }
 
 .mgmt-loading {
-  gap: 0.9rem;
+  min-height: clamp(20rem, 45vh, 34rem);
+}
+
+.mgmt-loading .twin-orbit {
+  --twin-orbit-color: #ffffff;
 }
 
 .loading-orbit-row {

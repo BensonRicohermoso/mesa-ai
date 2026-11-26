@@ -131,7 +131,6 @@ export function StaffManagement() {
     return (
       <div className="mgmt-loading">
         <TwinOrbit size="1.1rem" label="Loading staff roster" />
-        <p>Loading staff roster…</p>
       </div>
     )
   }

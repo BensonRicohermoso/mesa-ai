@@ -132,7 +132,6 @@ export function TableManagement() {
     return (
       <div className="mgmt-loading">
         <TwinOrbit size="1.1rem" label="Loading dining tables" />
-        <p>Loading dining tables…</p>
       </div>
     )
   }
