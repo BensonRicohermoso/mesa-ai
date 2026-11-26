@@ -275,7 +275,118 @@ Migration and any shared middleware/client API work must follow the repository o
 
 ---
 
-## 7. Test and Acceptance Plan
+## 7. Detailed Implementation Steps
+
+### Step 1 — Establish the inventory schema
+
+1. Create a migration for `suppliers`, `ingredients`, `menu_item_recipes`, `inventory_adjustments`, `planning_events`, and `advisor_recommendation_acknowledgements`.
+2. Add the base-unit and adjustment-reason enums/check constraints, foreign keys, uniqueness constraints, non-negative quantity constraints, timestamps, and update triggers.
+3. Add indexes for active ingredients, ingredient/supplier lookups, recipe lookups by menu item and ingredient, adjustment history by ingredient/date, and planning-event date overlap.
+4. Add admin-only RLS policies and verify that unauthenticated, cashier, kitchen, and customer sessions cannot read or write inventory data.
+5. Update `docs/DATABASE.md` with the new ERD relationships, column glossary, and stock-calculation definition.
+
+**Exit criterion:** migrations apply cleanly to an empty database and to the current development schema; the database accepts valid inventory data and rejects invalid units, negative setup values, and duplicate recipe rows.
+
+### Step 2 — Build inventory setup and ledger services
+
+1. Create an inventory module with separate validators, service, controller, and routes.
+2. Implement supplier and ingredient list/create/update/deactivate operations.
+3. Implement recipe read and complete-replacement operations in a transaction. Validate that each referenced ingredient exists and is active before replacing the prior recipe.
+4. Implement inventory-adjustment creation with the supported reasons: `physical_count`, `wastage`, `delivery_correction`, and `manual_correction`.
+5. Calculate stock from the latest physical-count baseline, subsequent adjustments, and paid-order recipe consumption. Return the calculated balance, most-recent-count timestamp, and calculation inputs for audit visibility.
+6. Never delete adjustments; corrections are new ledger rows linked by note/reference when needed.
+
+**Exit criterion:** an admin can configure an ingredient and recipe, record a count and wastage, and retrieve an auditable calculated stock balance.
+
+### Step 3 — Wire paid sales to recipe consumption
+
+1. Define a single reusable query/service function that returns paid menu-item quantities by date and menu item, using existing order-item price and cost snapshots.
+2. Ensure only paid/confirmed order outcomes count toward historical demand and inventory consumption; cancelled and expired orders do not.
+3. Map each paid order item to its recipe. Preserve a report of menu-item units that could not be consumed because their current recipe is absent.
+4. Make the stock calculation query-based in v1 rather than mutating stock during order processing. This prevents inventory drift if orders are corrected later.
+5. Add a performance review threshold: if query cost becomes material at production volume, introduce a derived consumption ledger in a later migration without changing the public API.
+
+**Exit criterion:** paid sales affect calculated ingredient stock, while cancelled/expired orders do not; missing recipes produce a visible setup warning instead of silent deductions.
+
+### Step 4 — Add planning events
+
+1. Build planning-event validators for title, type, date range, adjustment percentage, and optional note.
+2. Implement date-overlap list, create, edit, and delete operations.
+3. Build a planning-event editor in the Owner area with event types for promotion, holiday, closure, and large order.
+4. Display adjustment direction clearly: positive values increase expected demand and `-100%` closes demand for the affected date.
+5. Invalidate relevant planning cache entries after every create, edit, or delete action.
+
+**Exit criterion:** an admin can create a dated promotion or closure and retrieve the event in the future-date planning view.
+
+### Step 5 — Implement the deterministic planning engine
+
+1. Create a planning service independent of Gemini and UI code.
+2. Load the latest 12 completed weeks of paid-order history in Manila time and calculate menu-item weekday averages, all-days fallback averages, price snapshots, and cost snapshots.
+3. Generate daily future demand for the selected 30-, 60-, or 90-day horizon, then apply overlapping planning-event adjustments.
+4. Calculate forecast orders, sales, COGS, gross profit, gross margin, lookback metadata, and confidence level.
+5. Convert daily menu-item quantities into daily ingredient consumption via recipes.
+6. Calculate stockout date, required lead-time coverage, par-level buffer, purchase quantity, estimated purchase cost, and urgency for each active ingredient.
+7. Calculate prep direction, waste/slow-moving-stock/stale-count alerts, and setup warnings.
+8. Return stable recommendation keys derived from recommendation type, entity ID, relevant date, and forecast input watermark so acknowledgement can survive page refreshes but changes when the underlying recommendation materially changes.
+
+**Exit criterion:** the planning service returns repeatable verified calculations for a fixed data fixture without any model/API call.
+
+### Step 6 — Expose protected Advisor APIs
+
+1. Add `POST /api/ai/planning` and validate the selected horizon, timezone, source mode, and refresh flag.
+2. Add planning-event routes under `/api/advisor/planning-events` and inventory routes under `/api/inventory`.
+3. Add recommendation acknowledgement and CSV export routes.
+4. Cache planning results for five minutes using all forecast inputs and configuration update watermarks; bypass cache for explicit refresh.
+5. Return structured errors for missing setup/configuration separately from server failures so the UI can show actionable next steps.
+6. Update API documentation with example requests, response fields, roles, validation errors, and export columns.
+
+**Exit criterion:** an authenticated admin can obtain a planning response, acknowledge an action, and export a daily prep/purchase list; all other roles receive a forbidden response.
+
+### Step 7 — Add AI explanation with safe fallback
+
+1. Pass the compact, pre-calculated planning response to the existing AI service only after deterministic calculations complete.
+2. Ask Gemini for an executive summary and up to five prioritized actions; retain the current timeout, JSON validation, and fallback behavior.
+3. Build deterministic fallback text from the top alerts, restock needs, and profit forecast.
+4. Clearly label the deterministic facts and AI prose separately in the API response and UI.
+5. Add prompt tests proving that unsupported claims such as automatic ordering, net profit, or fabricated quantities are rejected/fallback safely.
+
+**Exit criterion:** planning remains fully usable when Gemini is unavailable, rate-limited, malformed, or disabled.
+
+### Step 8 — Build owner setup screens
+
+1. Add owner screens/tabs for suppliers, ingredients, and menu-item recipes.
+2. Let admins search ingredients, edit par levels/lead times/costs, see current calculated stock, and record a physical count or adjustment.
+3. Add a recipe editor inside or linked from each menu item, with ingredients, quantities, and base-unit labels.
+4. Add validation and warnings before saving: missing supplier, zero/empty recipe, incompatible inactive ingredient, and stale stock count.
+5. Ensure all mutations display a confirmation/error state and refresh only the affected data.
+
+**Exit criterion:** an owner can complete the inventory setup for one menu item without direct database access.
+
+### Step 9 — Build the Advisor planning workspace
+
+1. Extend the existing AI Advisor with a Planning subview and 30/60/90-day selector.
+2. Add projected-performance cards, confidence indicator, and gross-profit trend.
+3. Add the priority-action list with acknowledgement state and expandable explanation of the calculation.
+4. Add daily prep, supplier purchase-list, waste/setup watch, and planning-calendar sections.
+5. Implement CSV export and a print stylesheet/view for the selected day’s prep or purchase list.
+6. Add loading, empty, forbidden, low-confidence, and configuration-incomplete states that direct the owner to the exact next setup action.
+7. Add a dashboard badge for only critical/high stockout or margin actions, linked directly into Planning.
+
+**Exit criterion:** an owner can go from dashboard alert to a daily prep list or supplier purchase list in no more than two interactions.
+
+### Step 10 — Verify, document, and release
+
+1. Add database, service, API, and UI tests described below.
+2. Seed a realistic restaurant fixture that includes shared ingredients, recipes, stock counts, wastage, suppliers, historical sales, and planning events.
+3. Test manually in Preview mode before connecting live analytics; then run the live-data smoke test with an admin account.
+4. Document configuration order: suppliers → ingredients → recipes → initial physical count → par/lead-time settings → planning events.
+5. Release behind an owner/admin feature flag if production inventory setup is incomplete; monitor setup-warning counts, planning endpoint latency, and forecast-vs-actual accuracy.
+
+**Exit criterion:** all acceptance scenarios pass, all new routes are protected, and the owner can use the feature without model availability.
+
+---
+
+## 8. Test and Acceptance Plan
 
 ### Service tests
 
@@ -307,7 +418,7 @@ Migration and any shared middleware/client API work must follow the repository o
 
 ---
 
-## 8. Success Metrics
+## 9. Success Metrics
 
 - At least 95% of active menu-item sales have complete recipes within the first month of use.
 - At least 90% of active ingredients have a recent count, supplier, par level, and lead time.
