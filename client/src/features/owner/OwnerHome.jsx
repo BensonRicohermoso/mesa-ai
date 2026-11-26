@@ -1,16 +1,17 @@
-import { useState, useCallback } from 'react'
+import { lazy, Suspense, useState, useCallback } from 'react'
 import { useAuth } from '../../context/useAuth.js'
 import { PinPadModal } from '../auth/PinPadModal.jsx'
-import { MenuManagement } from './components/MenuManagement.jsx'
-import { TableManagement } from './components/TableManagement.jsx'
-import { StaffManagement } from './components/StaffManagement.jsx'
 import { StationSettingsModal } from './components/StationSettingsModal.jsx'
 import { AnalyticsToolbar } from './components/AnalyticsToolbar.jsx'
-import { OwnerDashboard } from './components/OwnerDashboard.jsx'
-import { AnalyticsReports } from './components/AnalyticsReports.jsx'
-import { AiAdvisor } from './components/AiAdvisor.jsx'
 import { getPresetDateRange } from './utils/analyticsFormatters.js'
 import './owner.css'
+
+const MenuManagement = lazy(() => import('./components/MenuManagement.jsx').then((m) => ({ default: m.MenuManagement })))
+const TableManagement = lazy(() => import('./components/TableManagement.jsx').then((m) => ({ default: m.TableManagement })))
+const StaffManagement = lazy(() => import('./components/StaffManagement.jsx').then((m) => ({ default: m.StaffManagement })))
+const OwnerDashboard = lazy(() => import('./components/OwnerDashboard.jsx').then((m) => ({ default: m.OwnerDashboard })))
+const AnalyticsReports = lazy(() => import('./components/AnalyticsReports.jsx').then((m) => ({ default: m.AnalyticsReports })))
+const AiAdvisor = lazy(() => import('./components/AiAdvisor.jsx').then((m) => ({ default: m.AiAdvisor })))
 
 const TABS = [
   { key: 'overview', label: '01 · Overview' },
@@ -126,6 +127,7 @@ export function OwnerHome() {
           {/* ── Tab Navigation ──────────────────────────────────── */}
           {/* ── Analytics Toolbar (shared by Overview & Reports) ── */}
           <div className="owner-content-transition" key={activeTab}>
+          <Suspense fallback={<div className="mgmt-empty" role="status">Loading section…</div>}>
           {showToolbar && (
             <AnalyticsToolbar
               filter={analyticsFilter}
@@ -170,6 +172,7 @@ export function OwnerHome() {
               onLoadingChange={setIsAnalyticsLoading}
             />
           )}
+          </Suspense>
 
           {/* ── Compact Station Footer Strip ──────────────────── */}
           </div>
