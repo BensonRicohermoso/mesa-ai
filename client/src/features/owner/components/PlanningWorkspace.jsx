@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { formatPhp } from '../utils/analyticsFormatters.js'
-import { getIngredients, getSuppliers, getRecipe, putRecipe, createIngredient, updateIngredient, createSupplier, updateSupplier, addAdjustment, getAdjustments } from '../../../shared/api/inventoryApi.js'
+import { getIngredients, getSuppliers, getRecipe, putRecipe, createIngredient, updateIngredient } from '../../../shared/api/inventoryApi.js'
 import { getMenuItems } from '../../../shared/api/menuApi.js'
-import { getPlanningEvents, createPlanningEvent, updatePlanningEvent, deletePlanningEvent } from '../../../shared/api/advisorApi.js'
+import { getPlanningEvents } from '../../../shared/api/advisorApi.js'
 import { postAiPlanning, acknowledgePlanningRecommendation, getPlanningAcknowledgements } from '../../../shared/api/aiApi.js'
 import { loadStoredSession } from '../../auth/authClient.js'
 
@@ -27,13 +27,6 @@ export function PlanningWorkspace() {
   const [ingredient, setIngredient] = useState({ name: '', baseUnit: 'g', onHandQuantity: 0, parLevelQuantity: 0, unitCost: 0, leadTimeDays: 0, supplierId: '' })
   const [selectedMenu, setSelectedMenu] = useState('')
   const [recipe, setRecipe] = useState([])
-  const [setupSection, setSetupSection] = useState('ingredients')
-  const [supplierForm, setSupplierForm] = useState({ name: '', contactName: '', phone: '', email: '' })
-  const [eventForm, setEventForm] = useState({ title: '', eventType: 'promotion', startsOn: today(), endsOn: today(), demandAdjustmentPct: 10, note: '' })
-  const [events, setEvents] = useState([])
-  const [adjusting, setAdjusting] = useState(null)
-  const [adjustment, setAdjustment] = useState({ reason: 'physical_count', countedQuantity: '', quantityDelta: '', note: '' })
-  const [audit, setAudit] = useState(null)
   const fail = (err) => setError(err?.message || 'The request could not be completed.')
   const loadSetup = useCallback(async () => {
     const [i, s, m] = await Promise.all([getIngredients(true), getSuppliers(true), getMenuItems({ includeInactive: false })])
@@ -47,7 +40,7 @@ export function PlanningWorkspace() {
       setPrepDate((current) => result.facts.dailyPrep.some((day) => day.date === current) ? current : result.facts.dailyPrep[0]?.date || today())
     } catch (err) { fail(err) } finally { setLoading(false) }
   }, [horizon])
-  useEffect(() => { Promise.all([loadSetup(), loadPlan(), getPlanningEvents(today(), '2099-12-31'), getPlanningAcknowledgements()]).then(([, , eventResult, ack]) => { setEvents(eventResult.events || []); setAcks(new Set((ack.acknowledgements || []).map((item) => item.recommendationKey))) }).catch(fail) }, [loadPlan, loadSetup])
+  useEffect(() => { Promise.all([loadSetup(), loadPlan(), getPlanningEvents(today(), '2099-12-31'), getPlanningAcknowledgements()]).then(([, , , ack]) => setAcks(new Set((ack.acknowledgements || []).map((item) => item.recommendationKey)))).catch(fail) }, [loadPlan, loadSetup])
   useEffect(() => { if (selectedMenu) getRecipe(selectedMenu).then((result) => setRecipe(result.items.map((item) => ({ ingredientId: item.ingredientId, quantityPerServing: item.quantityPerServing })))).catch(fail) }, [selectedMenu])
   const facts = planning?.facts
   const prep = facts?.dailyPrep.find((item) => item.date === prepDate)
@@ -63,10 +56,7 @@ export function PlanningWorkspace() {
       await Promise.all([loadSetup(), loadPlan(true)])
     } catch (err) { fail(err) }
   }
-  const saveSupplier = async (event) => { event.preventDefault(); try { if (editing?.type === 'supplier') await updateSupplier(editing.id, supplierForm); else await createSupplier(supplierForm); setSupplierForm({ name: '', contactName: '', phone: '', email: '' }); setEditing(null); await loadSetup() } catch (err) { fail(err) } }
-  const saveEvent = async (event) => { event.preventDefault(); try { const payload = { ...eventForm, demandAdjustmentPct: Number(eventForm.eventType === 'closure' ? -100 : eventForm.demandAdjustmentPct) }; if (editing?.type === 'event') await updatePlanningEvent(editing.id, payload); else await createPlanningEvent(payload); setEditing(null); setEvents((await getPlanningEvents(today(), '2099-12-31')).events || []); await loadPlan(true) } catch (err) { fail(err) } }
-  const saveAdjustment = async (event) => { event.preventDefault(); try { const payload = adjustment.reason === 'physical_count' ? { reason: adjustment.reason, countedQuantity: Number(adjustment.countedQuantity), note: adjustment.note } : { reason: adjustment.reason, quantityDelta: Number(adjustment.quantityDelta), note: adjustment.note }; await addAdjustment(adjusting.id, payload); setAdjusting(null); await Promise.all([loadSetup(), loadPlan(true)]) } catch (err) { fail(err) } }
-  const navigateAction = (action) => { const alert = (facts?.alerts || []).find((item) => item.recommendationKey === action.recommendationKey); if (alert?.type === 'stock') document.getElementById('purchase-list')?.scrollIntoView({ behavior: 'smooth' }); else { setView('setup'); setSetupSection(alert?.type === 'missing_recipe' ? 'recipes' : 'ingredients') } }
+  const navigateAction = (action) => { const alert = (facts?.alerts || []).find((item) => item.recommendationKey === action.recommendationKey); if (alert?.type === 'stock') document.getElementById('purchase-list')?.scrollIntoView({ behavior: 'smooth' }); else setView('setup') }
   return <div className="planning-workspace">
     {error && <div className="mgmt-error" role="alert">{error}</div>}
     <nav className="planning-nav"><button className={view === 'plan' ? 'planning-nav__active' : ''} onClick={() => setView('plan')}>Service plan</button><button className={view === 'setup' ? 'planning-nav__active' : ''} onClick={() => setView('setup')}>Inventory setup</button></nav>
