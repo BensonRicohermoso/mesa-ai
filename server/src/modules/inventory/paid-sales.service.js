@@ -148,13 +148,31 @@ export async function getPaidIngredientConsumption({ from, to, timeZone = "Asia/
   const orderItemSnapshots = await getPaidOrderItemSnapshots({ from, to });
   const menuItemSales = aggregatePaidMenuItemSales(orderItemSnapshots, { timeZone });
   if (menuItemSales.length === 0) return { menuItemSales, ingredientConsumption: [], missingRecipeMenuItems: [] };
-
-  const menuItemIds = [...new Set(menuItemSales.map((sale) => sale.menuItemId))];
-  const { data: recipes, error } = await supabase
-    .from("menu_item_recipes")
-    .select("menu_item_id,ingredient_id,quantity_per_serving")
-    .in("menu_item_id", menuItemIds);
+  const orderItemIds = orderItemSnapshots.map((item) => item.id);
+  let query = supabase.from("order_item_ingredient_consumptions").select("order_item_id,ingredient_id,quantity,confirmed_at").in("order_item_id", orderItemIds);
+  if (from) query = query.gte("confirmed_at", from);
+  if (to) query = query.lt("confirmed_at", to);
+  const { data: consumptions, error } = await query;
   if (error) throw error;
-
-  return mapPaidSalesToRecipeConsumption(orderItemSnapshots, recipes, { timeZone });
+  const consumptionOrderItems = new Set((consumptions || []).map((entry) => entry.order_item_id));
+  const missingByMenuItem = new Map();
+  for (const item of orderItemSnapshots) {
+    if (consumptionOrderItems.has(item.id)) continue;
+    const current = missingByMenuItem.get(item.menu_item_id) || { menuItemId: item.menu_item_id, itemName: item.item_name, quantity: 0, grossSales: 0, dates: [] };
+    current.quantity += number(item.quantity);
+    current.grossSales += number(item.line_total);
+    current.dates.push(salesDate(item.orders.confirmed_at, timeZone));
+    missingByMenuItem.set(item.menu_item_id, current);
+  }
+  return {
+    menuItemSales,
+    ingredientConsumption: (consumptions || []).map((entry) => ({
+      id: `${entry.order_item_id}:${entry.ingredient_id}`,
+      ingredientId: entry.ingredient_id,
+      orderItemId: entry.order_item_id,
+      confirmedAt: entry.confirmed_at,
+      quantity: number(entry.quantity),
+    })),
+    missingRecipeMenuItems: [...missingByMenuItem.values()].map((entry) => ({ ...entry, dates: [...new Set(entry.dates)].sort() })),
+  };
 }
