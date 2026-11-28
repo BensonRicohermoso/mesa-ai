@@ -643,6 +643,112 @@ button {
   color: var(--white);
   font-weight: 500;
 }
+.pin-feedback--ok {
+  color: #6fcf97;
+}
+.pin-feedback--err {
+  color: #eb5757;
+}
+
+/* ── Station Settings Modal ──────────────────────────────────────── */
+.station-modal {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+.station-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1.5rem;
+}
+.station-close-btn {
+  font-size: 1.1rem;
+  line-height: 1;
+  padding: 0.3rem 0.5rem;
+  margin-top: 0.1rem;
+}
+.station-section {
+  padding: 1.4rem 0;
+}
+.station-divider {
+  border: none;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  margin: 0;
+}
+
+/* ── Admin PIN-for-staff form ───────────────────────────────────── */
+.admin-pin-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-width: 28rem;
+}
+.admin-pin-staff-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.admin-pin-staff-row .form-input {
+  flex: 1;
+}
+.admin-pin-input-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+/* Staff PIN badge in the selector */
+.staff-pin-badge {
+  font-family: var(--font-sans);
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted-gray);
+  border: 1px solid rgba(255,255,255,0.15);
+  padding: 0.25rem 0.55rem;
+  white-space: nowrap;
+}
+.staff-pin-badge--set {
+  color: #6fcf97;
+  border-color: rgba(111,207,151,0.3);
+}
+
+/* PinPad – chip for staff with no PIN */
+.staff-chip--no-pin {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.staff-chip--no-pin:hover {
+  border-color: rgba(255,255,255,0.15);
+}
+.chip-no-pin {
+  font-size: 0.55rem !important;
+  color: #eb5757 !important;
+  letter-spacing: 0.08em !important;
+}
+.chip-role {
+  font-size: 0.6rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted-gray);
+}
+
+/* PinPad – warning when selected staff has no PIN */
+.pin-no-pin-warning {
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  color: #eb5757;
+  text-align: center;
+  padding: 0.5rem 0;
+}
+.pin-error {
+  text-align: center;
+  margin: 0;
+}
 
 .owner-actions {
   display: flex;
