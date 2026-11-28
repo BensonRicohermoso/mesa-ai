@@ -298,7 +298,7 @@ Migration and any shared middleware/client API work must follow the repository o
 
 **Exit criterion:** an admin can configure an ingredient and recipe, record a count and wastage, and retrieve an auditable calculated stock balance.
 
-### Step 3 — Wire paid sales to recipe consumption
+ 
 
 1. Define a single reusable query/service function that returns paid menu-item quantities by date and menu item, using existing order-item price and cost snapshots.
 2. Ensure only paid/confirmed order outcomes count toward historical demand and inventory consumption; cancelled and expired orders do not.

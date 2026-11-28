@@ -23,5 +23,8 @@ test("Inventory Advisor development fixture is repeatable and includes the accep
   ]) {
     assert.ok(sql.includes(required), `fixture must include ${required}`);
   }
+  const orderItemsInsert = sql.indexOf("INSERT INTO public.order_items");
+  const paidTransition = sql.indexOf("UPDATE public.orders\nSET payment_status = 'paid'");
+  assert.ok(orderItemsInsert >= 0 && paidTransition > orderItemsInsert, "fixture must transition orders to paid only after order items are inserted");
   assert.ok(!sql.includes("production data".toUpperCase()));
 });
