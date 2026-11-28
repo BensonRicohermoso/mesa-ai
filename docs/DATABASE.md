@@ -20,6 +20,8 @@
 
 | 12 | `20261127110000_inventory_recipe_replacement.sql` | Add atomic recipe replacement RPC with active-ingredient validation. | Codex | 2026-11-27 | Pending | — |
 
+| 13 | `20261128100000_fix_staff_pin_regex.sql` | Fix double-escaped regex and include `extensions` in `search_path` for `verify_staff_pin` and `set_staff_pin`. | Antigravity | 2026-11-28 | Pending | — |
+
 ## Seed Data
 
 | File name | Purpose | Date applied | Environment | Safe to re-run |
