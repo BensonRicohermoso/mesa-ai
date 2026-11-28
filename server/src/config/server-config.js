@@ -2,10 +2,11 @@ import "dotenv/config";
 
 const supabaseServerKey =
   process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
+const supabasePublishableKey =
+  process.env.SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_ANON_KEY;
 
-// Only SUPABASE_URL is required at the module level; the service-role key is
-// checked separately below. SUPABASE_ANON_KEY is a client-side value and is
-// intentionally not required server-side.
+// Both clients are created during server startup: the admin client needs the
+// server key and the auth client needs the publishable (or legacy anon) key.
 const requiredVariables = ["SUPABASE_URL"];
 
 const missingVariables = requiredVariables.filter(
@@ -14,6 +15,10 @@ const missingVariables = requiredVariables.filter(
 
 if (!supabaseServerKey) {
   missingVariables.push("SUPABASE_SECRET_KEY or SUPABASE_SERVICE_ROLE_KEY");
+}
+
+if (!supabasePublishableKey) {
+  missingVariables.push("SUPABASE_PUBLISHABLE_KEY or SUPABASE_ANON_KEY");
 }
 
 if (missingVariables.length > 0) {
@@ -33,8 +38,7 @@ export const env = {
       .trim()
       .replace(/\/+$/, "") || "http://localhost:5173",
   SUPABASE_URL: process.env.SUPABASE_URL,
-  SUPABASE_PUBLISHABLE_KEY:
-    process.env.SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_ANON_KEY || "",
+  SUPABASE_PUBLISHABLE_KEY: supabasePublishableKey,
   // Prefer Supabase's current secret key while accepting the legacy service-role key.
   SUPABASE_SERVICE_ROLE_KEY: supabaseServerKey,
   DATABASE_URL: process.env.DATABASE_URL,
