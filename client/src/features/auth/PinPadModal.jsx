@@ -8,6 +8,7 @@ function PinPadModalContent({ onClose, onSwitchSuccess, activeStaffId }) {
   const [selectedStaff, setSelectedStaff] = useState(null)
   const [error, setError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [loadError, setLoadError] = useState('')
 
   useEffect(() => {
     let isCurrent = true
@@ -15,40 +16,41 @@ function PinPadModalContent({ onClose, onSwitchSuccess, activeStaffId }) {
       .then((list) => {
         if (!isCurrent) return
         setStaffList(list)
-        const current = list.find((s) => s.id === activeStaffId) || list[0]
+        const current = list.find((s) => s.id === activeStaffId) || list[0] || null
         setSelectedStaff(current)
       })
-      .catch(() => {})
-
-    return () => {
-      isCurrent = false
-    }
+      .catch(() => {
+        if (!isCurrent) return
+        setLoadError('Could not load staff roster.')
+      })
+    return () => { isCurrent = false }
   }, [activeStaffId])
 
   useEffect(() => {
     function handleKeyDown(e) {
-      if (e.key === 'Escape' && !isSubmitting) onClose()
+      if (isSubmitting) return
+      if (e.key === 'Escape') { onClose(); return }
+      if (e.key === 'Backspace') { setPin((p) => p.slice(0, -1)); setError(''); return }
+      if (/^\d$/.test(e.key)) pressDigit(e.key)
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [isSubmitting, onClose])
+  }, [isSubmitting, onClose]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  function handleDigit(digit) {
+  function pressDigit(digit) {
     if (isSubmitting) return
-    if (pin.length < 4) {
-      const nextPin = pin + digit
-      setPin(nextPin)
+    setPin((prev) => {
+      if (prev.length >= 4) return prev
+      const next = prev + digit
       setError('')
-      // Auto-submit when all 4 digits are punched in
-      if (nextPin.length === 4) {
-        submitPin(nextPin)
-      }
-    }
+      if (next.length === 4) submitPin(next)
+      return next
+    })
   }
 
   function handleBackspace() {
     if (isSubmitting) return
-    setPin((prev) => prev.slice(0, -1))
+    setPin((p) => p.slice(0, -1))
     setError('')
   }
 
@@ -65,21 +67,22 @@ function PinPadModalContent({ onClose, onSwitchSuccess, activeStaffId }) {
       await onSwitchSuccess(pinToVerify, selectedStaff?.id || null)
       onClose()
     } catch (err) {
-      setError(err.message || 'Incorrect PIN')
+      setError(err.message || 'Incorrect PIN. Please try again.')
       setPin('')
     } finally {
       setIsSubmitting(false)
     }
   }
 
-  function handleSubmit(e) {
-    if (e) e.preventDefault()
+  function handleSubmit() {
     if (pin.length !== 4) {
-      setError('Please enter a 4-digit PIN.')
+      setError('Please enter all 4 digits.')
       return
     }
     submitPin(pin)
   }
+
+  const noPin = staffList.length > 0 && selectedStaff && !selectedStaff.hasPin
 
   return (
     <div
@@ -100,13 +103,16 @@ function PinPadModalContent({ onClose, onSwitchSuccess, activeStaffId }) {
             type="button"
             onClick={onClose}
             disabled={isSubmitting}
+            aria-label="Cancel PIN entry"
           >
-            ✕ Cancel
+            ✕
           </button>
         </header>
 
-        {/* Staff selector tabs */}
-        {staffList.length > 0 && (
+        {/* Staff chips — only show when list has more than one person */}
+        {loadError ? (
+          <p className="form-error" role="alert">{loadError}</p>
+        ) : staffList.length > 1 && (
           <div className="staff-selector" role="radiogroup" aria-label="Select staff member">
             {staffList.map((staff) => {
               const isSelected = selectedStaff?.id === staff.id
@@ -116,41 +122,49 @@ function PinPadModalContent({ onClose, onSwitchSuccess, activeStaffId }) {
                   type="button"
                   role="radio"
                   aria-checked={isSelected}
-                  className={`staff-chip ${isSelected ? 'active' : ''}`}
+                  className={`staff-chip ${isSelected ? 'active' : ''} ${!staff.hasPin ? 'staff-chip--no-pin' : ''}`}
                   onClick={() => {
                     setSelectedStaff(staff)
                     setPin('')
                     setError('')
                   }}
+                  disabled={isSubmitting}
+                  title={!staff.hasPin ? 'No PIN set — cannot switch to this staff member' : undefined}
                 >
                   <strong>{staff.fullName}</strong>
-                  <span>{staff.role}</span>
+                  <span className="chip-role">{staff.role}</span>
+                  {!staff.hasPin && <span className="chip-no-pin">No PIN</span>}
                 </button>
               )
             })}
           </div>
         )}
 
-        {/* Exactly 4 PIN Dots indicator */}
-        <div className="pin-display" aria-label="PIN digits entered">
-          {[0, 1, 2, 3].map((index) => (
-            <span
-              key={index}
-              className={`pin-dot ${index < pin.length ? 'filled' : ''}`}
-            />
+        {/* Warning when selected staff has no PIN */}
+        {noPin && (
+          <p className="pin-no-pin-warning" role="alert">
+            {selectedStaff.fullName} has no PIN set. Ask an admin to assign one in Station Settings.
+          </p>
+        )}
+
+        {/* PIN dot display */}
+        <div className="pin-display" aria-label={`${pin.length} of 4 PIN digits entered`}>
+          {[0, 1, 2, 3].map((i) => (
+            <span key={i} className={`pin-dot ${i < pin.length ? 'filled' : ''}`} />
           ))}
         </div>
 
-        {error && <p className="form-error" role="alert">{error}</p>}
+        {error && <p className="form-error pin-error" role="alert">{error}</p>}
 
-        {/* Tactile POS Numpad */}
+        {/* Numpad */}
         <div className="pin-keypad">
           {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((digit) => (
             <button
               key={digit}
               type="button"
               className="keypad-btn"
-              onClick={() => handleDigit(digit)}
+              onClick={() => pressDigit(digit)}
+              disabled={isSubmitting || noPin}
             >
               {digit}
             </button>
@@ -159,14 +173,16 @@ function PinPadModalContent({ onClose, onSwitchSuccess, activeStaffId }) {
             type="button"
             className="keypad-btn action-btn"
             onClick={handleClear}
-            title="Clear PIN"
+            disabled={isSubmitting || noPin}
+            title="Clear"
           >
             CLR
           </button>
           <button
             type="button"
             className="keypad-btn"
-            onClick={() => handleDigit('0')}
+            onClick={() => pressDigit('0')}
+            disabled={isSubmitting || noPin}
           >
             0
           </button>
@@ -174,6 +190,7 @@ function PinPadModalContent({ onClose, onSwitchSuccess, activeStaffId }) {
             type="button"
             className="keypad-btn action-btn"
             onClick={handleBackspace}
+            disabled={isSubmitting || noPin}
             title="Backspace"
           >
             ⌫
@@ -182,11 +199,15 @@ function PinPadModalContent({ onClose, onSwitchSuccess, activeStaffId }) {
 
         <button
           className="primary-button pin-submit-btn"
-          disabled={pin.length < 4 || isSubmitting}
+          disabled={pin.length < 4 || isSubmitting || noPin}
           type="button"
           onClick={handleSubmit}
         >
-          {isSubmitting ? 'Verifying PIN…' : `Switch to ${selectedStaff?.fullName || 'Staff'}`}
+          {isSubmitting
+            ? 'Verifying…'
+            : selectedStaff
+              ? `Switch to ${selectedStaff.fullName}`
+              : 'Switch Operator'}
         </button>
       </div>
     </div>
@@ -203,6 +224,7 @@ export function PinPadModal({ isOpen, onClose, onSwitchSuccess, activeStaffId })
   if (!isOpen) return null
   return (
     <PinPadModalContent
+      key={activeStaffId}
       onClose={onClose}
       onSwitchSuccess={onSwitchSuccess}
       activeStaffId={activeStaffId}
